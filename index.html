@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="color-scheme" content="light" />
 <meta name="description" content="Hier gibt es noch nichts. Aber du kannst trotzdem ein bisschen bleiben." />
-<title>Noch nichts hier</title>
+<title>Hier gibt es noch nichts.</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -14,14 +14,26 @@
 <body>
 
   <div class="scene" aria-hidden="true">
-    <div class="blob blob-a"></div>
-    <div class="blob blob-b"></div>
-    <div class="blob blob-c"></div>
-    <div class="blob blob-d"></div>
-    <div class="pulse-overlay" id="pulseOverlay"></div>
-    <div class="particles" id="particles"></div>
+    <div class="fields">
+      <div class="field field-f0"></div>
+      <div class="field field-f1a"></div>
+      <div class="field field-f1b"></div>
+      <div class="field field-f2a"></div>
+      <div class="field field-f2b"></div>
+      <div class="field field-f2c"></div>
+      <div class="field field-f3a"></div>
+      <div class="field field-f3b"></div>
+      <div class="field field-f3c"></div>
+      <div class="field field-f3d"></div>
+      <div class="field field-f4a"></div>
+      <div class="field field-f4b"></div>
+      <div class="field field-f4c"></div>
+      <div class="field field-f4d"></div>
+      <div class="field field-f4e"></div>
+    </div>
     <div class="cursor-light" id="cursorLight"></div>
     <div class="touch-light" id="touchLight"></div>
+    <div class="grain"></div>
   </div>
 
   <main class="stage">
@@ -40,8 +52,9 @@
     </div>
 
     <div class="epilogue" id="epilogue" aria-live="polite">
-      <p class="epilogue-line" id="epilogueLine1"></p>
-      <p class="epilogue-line epilogue-line--small" id="epilogueLine2"></p>
+      <p class="epilogue-line epilogue-line--1" id="epilogueLine1"></p>
+      <p class="epilogue-line epilogue-line--2" id="epilogueLine2"></p>
+      <p class="epilogue-line epilogue-line--3" id="epilogueLine3"></p>
     </div>
   </main>
 

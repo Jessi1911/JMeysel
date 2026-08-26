@@ -4,34 +4,70 @@
   const STORAGE_KEY = "jmeysel-experience-completed";
   const IDLE_DELAY = 15000;
   const LEAVE_MS = 300;
-  const PARTICLE_COUNT = 22;
 
   const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
   const touchQuery = window.matchMedia("(pointer: coarse)");
   let reducedMotion = reducedMotionQuery.matches;
   const isTouch = touchQuery.matches;
 
-  const STEPS = [
-    { headline: "Hier gibt es noch nichts.", subline: "Du kannst trotzdem ein bisschen bleiben.", button: "Okay.", intensity: 0.03, calm: 1, particles: 0 },
-    { headline: "Oh.", subline: "Du bist wirklich geblieben.", button: "Ja.", intensity: 0.09, calm: 1, particles: 0 },
-    { headline: "Das ist nett.", subline: "Ich hatte ehrlich gesagt nicht damit gerechnet.", button: "Macht nichts.", intensity: 0.15, calm: 1, particles: 0 },
-    { headline: "Ich habe noch gar nichts vorbereitet.", subline: "Nicht mal eine richtige Website.", button: "Sehe ich.", intensity: 0.2, calm: 1, particles: 0 },
-    { headline: "Fair.", subline: "Aber wir haben ja keine Eile.", button: "Eben.", intensity: 0.26, calm: 1, particles: 0 },
-    { headline: "Dann bleiben wir einfach kurz hier.", subline: "Ist eigentlich ganz angenehm.", button: "Finde ich auch.", intensity: 0.34, calm: 1, particles: 0 },
-    { headline: "Komisch eigentlich.", subline: "Im Internet will sonst immer jeder etwas von dir.", button: "Stimmt.", intensity: 0.34, calm: 0.4, particles: 0 },
-    { headline: "Hier nicht.", subline: "Du musst nichts anklicken. Nichts kaufen. Nichts verstehen.", button: "Schön.", intensity: 0.44, calm: 1, particles: 0 },
-    { headline: "Du klickst trotzdem weiter.", subline: "Das gefällt mir.", button: "Mir auch.", intensity: 0.5, calm: 1, particles: 0.4 },
-    { headline: "Ich glaube, wir verstehen uns.", subline: "Und das ganz ohne Inhalt.", button: "Läuft doch.", intensity: 0.57, calm: 1, particles: 0.6 },
-    { headline: "Vielleicht ist das hier schon genug.", subline: "Für den Moment zumindest.", button: "Vielleicht.", intensity: 0.55, calm: 0.45, particles: 0.6 },
-    { headline: "Eigentlich wollte ich hier irgendwann etwas bauen.", subline: "Ich weiß nur noch nicht was.", button: "Kein Stress.", intensity: 0.64, calm: 0.85, particles: 0.75 },
-    { headline: "Danke.", subline: "Das musste ich gerade hören.", button: "Gern.", intensity: 0.68, calm: 0.85, particles: 0.85, pulse: true },
-    { headline: "Dann machen wir für heute Schluss.", subline: "Bevor ich noch sentimental werde.", button: "Okay.", intensity: 0.62, calm: 0.8, particles: 0.45 },
-    { headline: "Schön, dass du dageblieben bist.", subline: "Vielleicht gibt es hier irgendwann mehr. Für heute reicht das aber.", button: null, intensity: 0.8, calm: 0.7, particles: 0.3, final: true },
+  const PHASE_TINTS = ["#eee7f6", "#e5d9f2", "#e8dcf4", "#e7ddf3", "#dac8ec"];
+
+  const BG = [
+    "#f8f6fa", "#f7f4fa", "#f5f1fa", "#f2ebf9", "#efe5f8", "#ecdff7",
+    "#e7d5f5", "#e3ccf3", "#dfc3f1", "#dab9ee", "#d6b0ec", "#d2a7e9",
+    "#ce9fe7", "#d2aee8", "#dec5ed",
   ];
 
+  const TITLES = [
+    "Hier gibt es noch nichts.", "Hier gibt es noch nichts.",
+    "Immer noch nichts.", "Immer noch nichts.", "Immer noch nichts.", "Immer noch nichts.", "Immer noch nichts.", "Immer noch nichts.",
+    "Okay, vielleicht ein bisschen.", "Okay, vielleicht ein bisschen.", "Okay, vielleicht ein bisschen.", "Okay, vielleicht ein bisschen.", "Okay, vielleicht ein bisschen.", "Okay, vielleicht ein bisschen.",
+    "Schön, dass du da warst.",
+  ];
+
+  const FIELD_CONFIG = {
+    f0: { phase: 0, min: 0.16, max: 0.34 },
+    f1a: { phase: 1, min: 0.3, max: 0.52 },
+    f1b: { phase: 1, min: 0.26, max: 0.46 },
+    f2a: { phase: 2, min: 0.42, max: 0.64 },
+    f2b: { phase: 2, min: 0.38, max: 0.58 },
+    f2c: { phase: 2, min: 0.3, max: 0.48 },
+    f3a: { phase: 3, min: 0.46, max: 0.68 },
+    f3b: { phase: 3, min: 0.42, max: 0.62 },
+    f3c: { phase: 3, min: 0.32, max: 0.5 },
+    f3d: { phase: 3, min: 0.1, max: 0.24 },
+    f4a: { phase: 4, min: 0.5, max: 0.72 },
+    f4b: { phase: 4, min: 0.46, max: 0.68 },
+    f4c: { phase: 4, min: 0.36, max: 0.56 },
+    f4d: { phase: 4, min: 0.28, max: 0.44 },
+    f4e: { phase: 4, min: 0, max: 0.26, curve: 3 },
+  };
+
+  const STEPS = [
+    { headline: "Hier gibt es noch nichts.", subline: "Du kannst trotzdem ein bisschen bleiben.", button: "Okay." },
+    { headline: "Du bist noch da.", subline: "Schön.", button: "Ja." },
+    { headline: "Ich sollte vielleicht erwähnen:", subline: "Hier kommt wirklich noch nichts.", button: "Macht nichts." },
+    { headline: "Gut.", subline: "Dann haben wir das geklärt.", button: "Gut." },
+    { headline: "Eigentlich ganz angenehm hier.", subline: "So ohne alles.", button: "Stimmt." },
+    { headline: "Kein Newsletter.", subline: "Kein Pop-up. Kein „Jetzt entdecken“.", button: "Herrlich." },
+    { headline: "Nicht mal Cookies.", subline: "Also … vermutlich schon irgendwann. Aber heute nicht.", button: "Sehr gut." },
+    { headline: "Wir könnten es einfach dabei belassen.", subline: "Eine leere Seite. Ein bisschen Flieder.", button: "Reicht doch." },
+    { headline: "Finde ich auch.", subline: "Wobei das hier inzwischen verdächtig nach Inhalt aussieht.", button: "Ein bisschen." },
+    { headline: "Mist.", subline: "So war das nicht geplant.", button: "Zu spät." },
+    { headline: "Na gut.", subline: "Dann machen wir eben eine Website daraus.", button: "Irgendwann." },
+    { headline: "Irgendwann klingt gut.", subline: "Heute haben wir schließlich schon genug geschafft.", button: "Absolut." },
+    { headline: "Dann wäre das geklärt.", subline: "Ich bleibe hier. Du kannst machen, was du willst.", button: "Klingt fair." },
+    { headline: "Eine Sache noch.", subline: "", button: "Ja?", calm: true },
+    { headline: "Schön, dass du dageblieben bist.", subline: "Wirklich.", button: null, final: true, finalBoost: true },
+  ].map((step, i) => {
+    const phase = Math.floor(i / 3);
+    const t = (i % 3) / 2;
+    return { ...step, phase, t, bg: BG[i], title: TITLES[i] };
+  });
+
   const RETURN_STEPS = [
-    { headline: "Hey.", subline: "Schön, dich wiederzusehen.", button: "Hallo.", intensity: 0.1, calm: 1, particles: 0 },
-    { headline: "Es gibt übrigens immer noch nichts.", subline: "Aber das hat uns letztes Mal ja auch nicht gestört.", button: "Stimmt.", intensity: 0.14, calm: 1, particles: 0 },
+    { headline: "Hey.", subline: "Schön, dich wiederzusehen.", button: "Hallo.", phase: 0, t: 1, bg: BG[2], title: "Willkommen zurück." },
+    { headline: "Es gibt übrigens immer noch nichts.", subline: "Aber das hat uns letztes Mal ja auch nicht gestört.", button: "Stimmt.", phase: 0, t: 1, bg: BG[2], title: "Willkommen zurück." },
   ];
 
   const els = {
@@ -45,62 +81,44 @@
     epilogue: document.getElementById("epilogue"),
     epilogueLine1: document.getElementById("epilogueLine1"),
     epilogueLine2: document.getElementById("epilogueLine2"),
-    blobA: document.querySelector(".blob-a"),
-    blobB: document.querySelector(".blob-b"),
-    blobC: document.querySelector(".blob-c"),
-    blobD: document.querySelector(".blob-d"),
-    particles: document.getElementById("particles"),
-    pulseOverlay: document.getElementById("pulseOverlay"),
+    epilogueLine3: document.getElementById("epilogueLine3"),
     cursorLight: document.getElementById("cursorLight"),
     touchLight: document.getElementById("touchLight"),
   };
+
+  const fieldEls = {};
+  Object.keys(FIELD_CONFIG).forEach((key) => {
+    fieldEls[key] = document.querySelector(`.field-${key}`);
+  });
+
+  const root = document.documentElement;
 
   let sequence = [];
   let stepIndex = 0;
   let isAnimating = false;
   let idleTimer = null;
+  let epilogueTimers = [];
 
-  function hexToRgb(hex) {
-    const v = parseInt(hex.slice(1), 16);
-    return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
-  }
-
-  function mixColor(hexA, hexB, t) {
-    const a = hexToRgb(hexA);
-    const b = hexToRgb(hexB);
-    const r = Math.round(a[0] + (b[0] - a[0]) * t);
-    const g = Math.round(a[1] + (b[1] - a[1]) * t);
-    const bl = Math.round(a[2] + (b[2] - a[2]) * t);
-    return `rgb(${r}, ${g}, ${bl})`;
-  }
-
-  function applyStage(step) {
-    const intensity = Math.min(1, step.intensity);
-    const bgT = intensity * 0.32;
-    document.body.style.backgroundColor = mixColor("#f8f6fa", "#f1eaf7", bgT);
-
-    els.blobA.style.opacity = String(intensity * 0.55);
-    els.blobB.style.opacity = String(intensity * 0.5);
-    els.blobC.style.opacity = String(intensity * 0.42);
-    els.blobD.style.opacity = String(Math.max(0, intensity - 0.45) * 0.32);
-
-    const amp = `${(2.5 + step.calm * 2.5).toFixed(2)}vw`;
-    [els.blobA, els.blobB, els.blobC, els.blobD].forEach((el) => {
-      el.style.setProperty("--amp", amp);
+  function applyVisual(step) {
+    Object.keys(FIELD_CONFIG).forEach((key) => {
+      const cfg = FIELD_CONFIG[key];
+      const el = fieldEls[key];
+      if (!el) return;
+      if (cfg.phase === step.phase) {
+        let t = step.t;
+        if (cfg.curve) t = Math.pow(t, cfg.curve);
+        let op = cfg.min + (cfg.max - cfg.min) * t;
+        if (step.finalBoost) op = Math.min(0.92, op + 0.06);
+        el.style.opacity = String(op);
+      } else {
+        el.style.opacity = "0";
+      }
     });
-    els.blobA.style.setProperty("--dur-a", `${(46 / step.calm).toFixed(1)}s`);
-    els.blobB.style.setProperty("--dur-b", `${(52 / step.calm).toFixed(1)}s`);
-    els.blobC.style.setProperty("--dur-c", `${(58 / step.calm).toFixed(1)}s`);
-    els.blobD.style.setProperty("--dur-d", `${(50 / step.calm).toFixed(1)}s`);
 
-    els.particles.style.opacity = String(step.particles || 0);
-
-    if (step.pulse && !reducedMotion) {
-      els.pulseOverlay.classList.remove("is-pulsing");
-      // eslint-disable-next-line no-unused-expressions
-      els.pulseOverlay.offsetWidth;
-      els.pulseOverlay.classList.add("is-pulsing");
-    }
+    document.body.style.backgroundColor = step.bg;
+    root.style.setProperty("--tint", PHASE_TINTS[step.phase]);
+    root.style.setProperty("--motion-scale", step.calm ? "1.7" : "1");
+    document.title = step.title;
   }
 
   function clearIdleTimer() {
@@ -118,12 +136,50 @@
     }, IDLE_DELAY);
   }
 
+  function clearEpilogueTimers() {
+    epilogueTimers.forEach((id) => clearTimeout(id));
+    epilogueTimers = [];
+    els.epilogueLine1.textContent = "";
+    els.epilogueLine2.textContent = "";
+    els.epilogueLine3.textContent = "";
+    els.epilogueLine1.classList.remove("is-visible");
+    els.epilogueLine2.classList.remove("is-visible");
+    els.epilogueLine3.classList.remove("is-visible");
+  }
+
+  function scheduleFinal() {
+    clearEpilogueTimers();
+    epilogueTimers.push(
+      setTimeout(() => {
+        els.epilogueLine1.textContent = "Komm gern wieder.";
+        els.epilogueLine1.classList.add("is-visible");
+      }, 1800)
+    );
+    epilogueTimers.push(
+      setTimeout(() => {
+        els.epilogueLine2.textContent = "Vielleicht gibt es dann schon was.";
+        els.epilogueLine2.classList.add("is-visible");
+      }, 3300)
+    );
+    epilogueTimers.push(
+      setTimeout(() => {
+        els.epilogueLine3.textContent = "Keine Garantie.";
+        els.epilogueLine3.classList.add("is-visible");
+        try {
+          localStorage.setItem(STORAGE_KEY, "1");
+        } catch (e) {
+          /* localStorage unavailable — experience still works, just won't be remembered */
+        }
+      }, 4800)
+    );
+  }
+
   function renderStep(index, initial) {
     const step = sequence[index];
     els.headline.textContent = step.headline;
     els.subline.textContent = step.subline;
 
-    applyStage(step);
+    applyVisual(step);
 
     if (step.button) {
       els.actionLabel.textContent = step.button;
@@ -151,19 +207,24 @@
     }
 
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        els.headline.classList.remove("is-leaving", "is-entering");
-        els.subline.classList.remove("is-leaving", "is-entering");
-        els.action.classList.remove("is-leaving", "is-entering");
-        isAnimating = false;
-        if (step.button) {
-          scheduleIdleTimer();
-        }
-        if (step.final) {
-          scheduleFinal();
-        }
-      });
+      els.headline.classList.remove("is-leaving", "is-entering");
+      els.subline.classList.remove("is-leaving", "is-entering");
+      els.action.classList.remove("is-leaving", "is-entering");
     });
+
+    // Decoupled from rAF on purpose: idle/epilogue timers must fire on a real
+    // wall-clock schedule even if the compositor throttles animation frames
+    // (backgrounded tab, low-power mode, etc).
+    const settleDelay = reducedMotion ? 420 : 700;
+    setTimeout(() => {
+      isAnimating = false;
+      if (step.button) {
+        scheduleIdleTimer();
+      }
+      if (step.final) {
+        scheduleFinal();
+      }
+    }, settleDelay);
   }
 
   function goNext() {
@@ -190,59 +251,23 @@
     }, delay);
   }
 
-  function scheduleFinal() {
-    setTimeout(() => {
-      try {
-        localStorage.setItem(STORAGE_KEY, "1");
-      } catch (e) {
-        /* localStorage unavailable — experience still works, just won't be remembered */
-      }
-      els.epilogueLine1.textContent = "Komm gern wieder.";
-      els.epilogueLine2.textContent = "Bis dahin passe ich auf die Domain auf.";
-      els.epilogue.classList.add("is-visible");
-    }, 2000);
-  }
-
-  function initParticles() {
-    const frag = document.createDocumentFragment();
-    for (let i = 0; i < PARTICLE_COUNT; i += 1) {
-      const p = document.createElement("div");
-      p.className = reducedMotion ? "particle" : "particle drift";
-      const size = 2 + Math.random() * 2.5;
-      p.style.width = `${size}px`;
-      p.style.height = `${size}px`;
-      p.style.left = `${Math.random() * 100}%`;
-      p.style.top = `${Math.random() * 100}%`;
-      p.style.setProperty("--p-x", `${(Math.random() * 30 - 15).toFixed(1)}px`);
-      p.style.setProperty("--p-y", `${(Math.random() * 40 - 30).toFixed(1)}px`);
-      p.style.setProperty("--p-min", (0.1 + Math.random() * 0.1).toFixed(2));
-      p.style.setProperty("--p-max", (0.3 + Math.random() * 0.25).toFixed(2));
-      if (!reducedMotion) {
-        p.style.animationDuration = `${18 + Math.random() * 18}s`;
-        p.style.animationDelay = `-${Math.random() * 20}s`;
-      } else {
-        p.style.opacity = "0.2";
-      }
-      frag.appendChild(p);
-    }
-    els.particles.appendChild(frag);
-  }
-
   function initCursorLight() {
     if (isTouch || reducedMotion) return;
 
-    let targetX = window.innerWidth / 2;
-    let targetY = window.innerHeight / 2;
-    let x = targetX;
-    let y = targetY;
+    let anchorX = window.innerWidth / 2;
+    let anchorY = window.innerHeight / 2;
+    let x = anchorX;
+    let y = anchorY;
     let raf = null;
     let hovering = false;
 
     window.addEventListener(
       "mousemove",
       (e) => {
-        targetX = e.clientX;
-        targetY = e.clientY;
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
+        anchorX = cx + (e.clientX - cx) * 0.18;
+        anchorY = cy + (e.clientY - cy) * 0.18;
       },
       { passive: true }
     );
@@ -255,10 +280,10 @@
     });
 
     function tick() {
-      x += (targetX - x) * 0.055;
-      y += (targetY - y) * 0.055;
+      x += (anchorX - x) * 0.035;
+      y += (anchorY - y) * 0.035;
       els.cursorLight.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-      els.cursorLight.style.opacity = hovering ? "0.42" : "0.3";
+      els.cursorLight.style.opacity = hovering ? "0.34" : "0.22";
       raf = requestAnimationFrame(tick);
     }
 
@@ -314,7 +339,6 @@
       reducedMotion = e.matches;
     });
 
-    initParticles();
     initCursorLight();
     initTouchLight();
 
