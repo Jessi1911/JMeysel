@@ -3,7 +3,7 @@
 
   const STORAGE_KEY = "jmeysel-experience-completed";
   const IDLE_DELAY = 15000;
-  const LEAVE_MS = 300;
+  const LEAVE_MS = 320;
 
   const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
   const touchQuery = window.matchMedia("(pointer: coarse)");
@@ -17,39 +17,48 @@
     "Schön, dass du da warst.",
   ];
 
-  // Each "room" is a fixed spatial zone (see styles.css .room-a..e). Opacity is a
-  // function of overall progress p (0 = screen 1, 1 = final screen) and layers
-  // cumulatively — rooms fade in and stay, so the finale reads as a spatial mix
-  // of every color rather than one flat tint replacing the last.
-  const ROOMS = {
-    a: (p) => 0.55 - 0.27 * p,
-    b: (p) => 0.05 + 0.6 * Math.pow(p, 0.75),
-    c: (p) => 0.58 * Math.max(0, (p - 0.12) / 0.88),
-    d: (p) => 0.44 * Math.max(0, (p - 0.42) / 0.58),
-    e: (p) => 0.36 * Math.pow(Math.max(0, (p - 0.68) / 0.32), 1.4),
-  };
+  // A deliberate, non-random position per screen — a quiet choreography through
+  // the viewport rather than a fixed layout. Values are vw/vh so they scale
+  // down naturally (and are additionally damped, see styles.css) on mobile.
+  const POSITIONS = [
+    { x: "0vw", y: "0vh" }, // 1 — central
+    { x: "-6vw", y: "-3.5vh" }, // 2 — leicht links, etwas höher
+    { x: "5vw", y: "0vh" }, // 3 — leicht rechts
+    { x: "2vw", y: "-1vh" }, // 4 — wieder näher zur Mitte
+    { x: "-5vw", y: "3.5vh" }, // 5 — links unten
+    { x: "4vw", y: "0vh" }, // 6 — etwas rechts der Mitte
+    { x: "0vw", y: "0vh" }, // 7 — zentral, ruhig
+    { x: "-4vw", y: "0vh" }, // 8 — leicht links
+    { x: "6vw", y: "0vh" }, // 9 — rechts
+    { x: "0vw", y: "0vh" }, // 10 — zentral
+    { x: "-4vw", y: "-2.5vh" }, // 11 — etwas links und höher
+    { x: "4vw", y: "2.5vh" }, // 12 — leicht rechts und tiefer
+    { x: "2vw", y: "-1vh" }, // 13 — zurück Richtung Mitte
+    { x: "0vw", y: "0vh" }, // 14 — zentral, sehr ruhig
+    { x: "0vw", y: "0vh" }, // 15 — klar zentriert
+  ];
 
   const STEPS = [
-    { headline: "Hier gibt es<br>noch nichts.", subline: "Du kannst trotzdem ein bisschen bleiben.", button: "Okay." },
-    { headline: "Du bist noch da.", subline: "Schön.", button: "Ja." },
-    { headline: "Ich sollte vielleicht<br>erwähnen:", subline: "Hier kommt wirklich noch nichts.", button: "Macht nichts." },
-    { headline: "Gut.", subline: "Dann haben wir das geklärt.", button: "Gut." },
-    { headline: "Eigentlich ganz<br>angenehm hier.", subline: "So ohne alles.", button: "Stimmt." },
-    { headline: "Kein Newsletter.", subline: "Kein Pop-up. Kein „Jetzt entdecken“.", button: "Herrlich." },
-    { headline: "Nicht mal Cookies.", subline: "Also … vermutlich schon irgendwann. Aber heute nicht.", button: "Sehr gut." },
-    { headline: "Wir könnten es einfach<br>dabei belassen.", subline: "Eine leere Seite. Ein bisschen Flieder.", button: "Reicht doch." },
-    { headline: "Finde ich auch.", subline: "Wobei das hier inzwischen verdächtig nach Inhalt aussieht.", button: "Ein bisschen." },
-    { headline: "Mist.", subline: "So war das nicht geplant.", button: "Zu spät." },
-    { headline: "Na gut.", subline: "Dann machen wir eben eine Website daraus.", button: "Irgendwann." },
-    { headline: "Irgendwann<br>klingt gut.", subline: "Heute haben wir schließlich schon genug geschafft.", button: "Absolut." },
-    { headline: "Dann wäre<br>das geklärt.", subline: "Ich bleibe hier. Du kannst machen, was du willst.", button: "Klingt fair." },
-    { headline: "Eine Sache noch.", subline: "", button: "Ja?", calm: true },
-    { headline: "Schön, dass du<br>dageblieben bist.", subline: "Wirklich.", button: null, final: true },
-  ].map((step, i, arr) => ({ ...step, p: i / (arr.length - 1), title: TITLES[i] }));
+    { headline: "Hier gibt es<br>noch nichts.", subline: "Du kannst trotzdem ein bisschen bleiben.", button: "Okay.", scale: 1 },
+    { headline: "Du bist noch da.", subline: "Schön.", button: "Ja.", scale: 1.1 },
+    { headline: "Ich sollte vielleicht<br>erwähnen:", subline: "Hier kommt wirklich noch nichts.", button: "Macht nichts.", scale: 0.92 },
+    { headline: "Gut.", subline: "Dann haben wir das geklärt.", button: "Gut.", scale: 1.55 },
+    { headline: "Eigentlich ganz<br>angenehm hier.", subline: "So ohne alles.", button: "Stimmt.", scale: 0.95 },
+    { headline: "Kein Newsletter.", subline: "Kein Pop-up. Kein „Jetzt entdecken“.", button: "Herrlich.", scale: 1.15, newsletter: true },
+    { headline: "Nicht mal Cookies.", subline: "Also … vermutlich schon irgendwann. Aber heute nicht.", button: "Sehr gut.", scale: 1.05 },
+    { headline: "Wir könnten es einfach<br>dabei belassen.", subline: "Eine leere Seite. Ein bisschen Flieder.", button: "Reicht doch.", scale: 0.82 },
+    { headline: "Finde ich auch.", subline: "Wobei das hier inzwischen verdächtig nach Inhalt aussieht.", button: "Ein bisschen.", scale: 1.05 },
+    { headline: "Mist.", subline: "So war das nicht geplant.", button: "Zu spät.", scale: 1.6, pauseMotion: true },
+    { headline: "Na gut.", subline: "Dann machen wir eben eine Website daraus.", button: "Irgendwann.", scale: 1.15 },
+    { headline: "Irgendwann<br>klingt gut.", subline: "Heute haben wir schließlich schon genug geschafft.", button: "Absolut.", scale: 0.95 },
+    { headline: "Dann wäre<br>das geklärt.", subline: "Ich bleibe hier. Du kannst machen, was du willst.", button: "Klingt fair.", scale: 0.92 },
+    { headline: "Eine Sache noch.", subline: "", button: "Ja?", scale: 1, calm: true },
+    { headline: "Schön, dass du<br>dageblieben bist.", subline: "Wirklich.", button: null, scale: 1.1, final: true },
+  ].map((step, i, arr) => ({ ...step, p: i / (arr.length - 1), title: TITLES[i], pos: POSITIONS[i] }));
 
   const RETURN_STEPS = [
-    { headline: "Hey.", subline: "Schön, dich wiederzusehen.", button: "Hallo.", p: 0.22, title: "Willkommen zurück." },
-    { headline: "Es gibt übrigens<br>immer noch nichts.", subline: "Aber das hat uns letztes Mal ja auch nicht gestört.", button: "Stimmt.", p: 0.22, title: "Willkommen zurück." },
+    { headline: "Hey.", subline: "Schön, dich wiederzusehen.", button: "Hallo.", p: 0.22, title: "Willkommen zurück.", pos: { x: "0vw", y: "0vh" }, scale: 1.4 },
+    { headline: "Es gibt übrigens<br>immer noch nichts.", subline: "Aber das hat uns letztes Mal ja auch nicht gestört.", button: "Stimmt.", p: 0.22, title: "Willkommen zurück.", pos: { x: "0vw", y: "0vh" }, scale: 1 },
   ];
 
   const els = {
@@ -63,14 +72,17 @@
     epilogueLine1: document.getElementById("epilogueLine1"),
     epilogueLine2: document.getElementById("epilogueLine2"),
     epilogueLine3: document.getElementById("epilogueLine3"),
+    scene: document.getElementById("scene"),
+    sculpture: document.getElementById("sculpture"),
+    sculptureLayers: Array.from(document.querySelectorAll(".sculpture-layer")),
+    ambientEls: Array.from(document.querySelectorAll(".ambient")),
+    storyLight: document.getElementById("storyLight"),
+    spark: document.getElementById("spark"),
+    ghostOutline: document.getElementById("ghostOutline"),
+    ghostFill: document.getElementById("ghostFill"),
     cursorLight: document.getElementById("cursorLight"),
     touchLight: document.getElementById("touchLight"),
   };
-
-  const roomEls = {};
-  Object.keys(ROOMS).forEach((key) => {
-    roomEls[key] = document.querySelector(`.room-${key}`);
-  });
 
   const root = document.documentElement;
 
@@ -79,24 +91,60 @@
   let isAnimating = false;
   let idleTimer = null;
   let epilogueTimers = [];
+  let pauseMotionTimer = null;
 
-  function tintFor(p) {
-    if (p >= 0.75) return "#a77bcc";
-    if (p >= 0.4) return "#e5d5f4";
-    return "#eee8f6";
+  function storyTintFor(p) {
+    if (p >= 0.75) return "#8d5bc5";
+    if (p >= 0.4) return "#b88bea";
+    return "#c7a4f4";
   }
 
   function applyVisual(step) {
-    Object.keys(ROOMS).forEach((key) => {
-      const el = roomEls[key];
-      if (!el) return;
-      el.style.opacity = String(ROOMS[key](step.p));
+    const p = step.p;
+
+    els.sculptureLayers.forEach((el, i) => {
+      const curves = [0.06 + 0.4 * p, 0.36 * Math.max(0, (p - 0.12) / 0.88), 0.32 * Math.max(0, (p - 0.3) / 0.7)];
+      el.style.opacity = String(curves[i] || 0);
+    });
+    root.style.setProperty("--sculpture-rot", `${(p * 16).toFixed(1)}deg`);
+
+    els.ambientEls.forEach((el, i) => {
+      const curves = [0.15 + 0.35 * p, 0.1 + 0.4 * Math.max(0, (p - 0.2) / 0.8)];
+      el.style.opacity = String(curves[i] || 0);
     });
 
-    root.style.setProperty("--tint", tintFor(step.p));
+    els.storyLight.style.opacity = String(0.05 + 0.42 * p);
+    const size = 38 + p * 30;
+    els.storyLight.style.width = `${size}vw`;
+    els.storyLight.style.height = `${size}vw`;
+    root.style.setProperty("--story-tint", storyTintFor(p));
+
+    root.style.setProperty("--pos-x", step.pos.x);
+    root.style.setProperty("--pos-y", step.pos.y);
+    root.style.setProperty("--h-scale", String(step.scale || 1));
     root.style.setProperty("--motion-scale", step.calm ? "1.7" : "1");
-    document.body.classList.toggle("is-final", !!step.final);
+
     document.title = step.title;
+  }
+
+  function triggerGhostRects() {
+    if (reducedMotion) return;
+    [els.ghostOutline, els.ghostFill].forEach((el) => {
+      el.classList.remove("is-active");
+      // eslint-disable-next-line no-unused-expressions
+      el.offsetWidth;
+      el.classList.add("is-active");
+    });
+  }
+
+  function triggerMotionPause() {
+    if (reducedMotion) return;
+    if (pauseMotionTimer) clearTimeout(pauseMotionTimer);
+    els.scene.classList.add("is-paused");
+    pauseMotionTimer = setTimeout(() => {
+      els.scene.classList.remove("is-paused");
+      pauseMotionTimer = null;
+    }, 900);
   }
 
   function clearIdleTimer() {
@@ -159,6 +207,9 @@
 
     applyVisual(step);
 
+    if (step.newsletter) triggerGhostRects();
+    if (step.pauseMotion) triggerMotionPause();
+
     if (step.button) {
       els.actionLabel.textContent = step.button;
       els.action.style.display = "";
@@ -193,7 +244,7 @@
     // Decoupled from rAF on purpose: idle/epilogue timers must fire on a real
     // wall-clock schedule even if the compositor throttles animation frames
     // (backgrounded tab, low-power mode, etc).
-    const settleDelay = reducedMotion ? 420 : 700;
+    const settleDelay = reducedMotion ? 420 : 850;
     setTimeout(() => {
       isAnimating = false;
       if (step.button) {
@@ -205,6 +256,14 @@
     }, settleDelay);
   }
 
+  function triggerSpark() {
+    if (reducedMotion) return;
+    els.spark.classList.remove("is-active");
+    // eslint-disable-next-line no-unused-expressions
+    els.spark.offsetWidth;
+    els.spark.classList.add("is-active");
+  }
+
   function goNext() {
     if (isAnimating) return;
     const current = sequence[stepIndex];
@@ -212,6 +271,7 @@
 
     isAnimating = true;
     clearIdleTimer();
+    triggerSpark();
 
     els.headline.classList.add("is-leaving");
     els.subline.classList.add("is-leaving");
@@ -224,7 +284,7 @@
     }, delay);
   }
 
-  function initCursorLight() {
+  function initPointerEffects() {
     if (isTouch || reducedMotion) return;
 
     let anchorX = window.innerWidth / 2;
@@ -255,8 +315,17 @@
     function tick() {
       x += (anchorX - x) * 0.035;
       y += (anchorY - y) * 0.035;
+
       els.cursorLight.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-      els.cursorLight.style.opacity = hovering ? "0.34" : "0.22";
+      els.cursorLight.style.opacity = hovering ? "0.22" : "0.13";
+
+      // The sculpture leans away from the cursor — a slow, inverted, subtle
+      // parallax rather than something visibly "following" the pointer.
+      const offsetX = x - window.innerWidth / 2;
+      const offsetY = y - window.innerHeight / 2;
+      root.style.setProperty("--parallax-x", `${(-offsetX * 0.02).toFixed(1)}px`);
+      root.style.setProperty("--parallax-y", `${(-offsetY * 0.02).toFixed(1)}px`);
+
       raf = requestAnimationFrame(tick);
     }
 
@@ -264,8 +333,10 @@
       if (document.hidden) {
         if (raf) cancelAnimationFrame(raf);
         raf = null;
-      } else if (!raf) {
-        raf = requestAnimationFrame(tick);
+        els.scene.classList.add("is-paused");
+      } else {
+        els.scene.classList.remove("is-paused");
+        if (!raf) raf = requestAnimationFrame(tick);
       }
     });
 
@@ -288,6 +359,10 @@
       },
       { passive: true }
     );
+
+    document.addEventListener("visibilitychange", () => {
+      els.scene.classList.toggle("is-paused", document.hidden);
+    });
   }
 
   function start() {
@@ -312,7 +387,7 @@
       reducedMotion = e.matches;
     });
 
-    initCursorLight();
+    initPointerEffects();
     initTouchLight();
 
     renderStep(0, true);
