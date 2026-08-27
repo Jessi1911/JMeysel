@@ -43,6 +43,111 @@ body {
   color: rgb(var(--text));
 }
 
+/* ---------- brand mark ---------- */
+
+.brand {
+  position: fixed;
+  top: max(24px, env(safe-area-inset-top) + 20px);
+  left: max(24px, env(safe-area-inset-left) + 24px);
+  z-index: 3;
+  appearance: none;
+  background: none;
+  border: none;
+  margin: 0;
+  padding: 0.2rem;
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: clamp(1.125rem, 0.6vw + 1rem, 1.5rem);
+  letter-spacing: 0.01em;
+  line-height: 1;
+  color: rgb(var(--text));
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+@media (min-width: 48rem) {
+  .brand {
+    top: 40px;
+    left: 44px;
+  }
+}
+
+.brand-lead {
+  display: inline-block;
+}
+
+.brand-rest,
+.brand-space {
+  display: inline-block;
+  overflow: hidden;
+  max-width: 0;
+  opacity: 0;
+  letter-spacing: -0.06em;
+  transform: translateX(-3px);
+  vertical-align: baseline;
+  transition: max-width 620ms cubic-bezier(0.22, 1, 0.36, 1), opacity 420ms ease, letter-spacing 560ms ease, transform 560ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.brand-word--second .brand-rest {
+  transition-delay: 70ms;
+}
+
+.brand-space {
+  transition-delay: 30ms;
+}
+
+.brand:hover .brand-rest,
+.brand:focus-visible .brand-rest,
+.brand.is-revealed .brand-rest,
+.brand:hover .brand-space,
+.brand:focus-visible .brand-space,
+.brand.is-revealed .brand-space {
+  max-width: 9em;
+  opacity: 1;
+  letter-spacing: normal;
+  transform: translateX(0);
+}
+
+.brand.is-revealed .brand-rest,
+.brand.is-revealed .brand-space {
+  transition-duration: 920ms;
+}
+
+.brand:hover .brand-lead,
+.brand:focus-visible .brand-lead,
+.brand.is-revealed .brand-lead {
+  animation: brandTint 650ms ease 1;
+}
+
+.brand.is-revealed .brand-lead {
+  animation-duration: 950ms;
+}
+
+@keyframes brandTint {
+  0% { color: rgb(var(--text)); }
+  42% { color: var(--lavender); }
+  100% { color: rgb(var(--text)); }
+}
+
+.brand:focus-visible {
+  outline: 2px solid rgba(199, 164, 244, 0.55);
+  outline-offset: 6px;
+  border-radius: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-rest,
+  .brand-space {
+    transition: none;
+  }
+
+  .brand:hover .brand-lead,
+  .brand:focus-visible .brand-lead,
+  .brand.is-revealed .brand-lead {
+    animation: none;
+  }
+}
+
 /* ---------- background scene ---------- */
 
 .scene {

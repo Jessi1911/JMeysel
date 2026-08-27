@@ -82,6 +82,7 @@
     ghostFill: document.getElementById("ghostFill"),
     cursorLight: document.getElementById("cursorLight"),
     touchLight: document.getElementById("touchLight"),
+    brand: document.getElementById("brand"),
   };
 
   const root = document.documentElement;
@@ -92,6 +93,8 @@
   let idleTimer = null;
   let epilogueTimers = [];
   let pauseMotionTimer = null;
+  let brandRevealTimer = null;
+  let stepTimer = null;
 
   function storyTintFor(p) {
     if (p >= 0.75) return "#8d5bc5";
@@ -200,6 +203,21 @@
     );
   }
 
+  function clearBrandReveal() {
+    if (brandRevealTimer) {
+      clearTimeout(brandRevealTimer);
+      brandRevealTimer = null;
+    }
+    els.brand.classList.remove("is-revealed");
+  }
+
+  function scheduleBrandReveal() {
+    brandRevealTimer = setTimeout(() => {
+      els.brand.classList.add("is-revealed");
+      brandRevealTimer = null;
+    }, 2500);
+  }
+
   function renderStep(index, initial) {
     const step = sequence[index];
     els.headline.innerHTML = step.headline;
@@ -224,6 +242,7 @@
       }
       if (step.final) {
         scheduleFinal();
+        scheduleBrandReveal();
       }
       return;
     }
@@ -245,13 +264,15 @@
     // wall-clock schedule even if the compositor throttles animation frames
     // (backgrounded tab, low-power mode, etc).
     const settleDelay = reducedMotion ? 420 : 850;
-    setTimeout(() => {
+    stepTimer = setTimeout(() => {
+      stepTimer = null;
       isAnimating = false;
       if (step.button) {
         scheduleIdleTimer();
       }
       if (step.final) {
         scheduleFinal();
+        scheduleBrandReveal();
       }
     }, settleDelay);
   }
@@ -278,8 +299,38 @@
     els.action.classList.add("is-leaving");
 
     const delay = reducedMotion ? 150 : LEAVE_MS;
-    setTimeout(() => {
+    stepTimer = setTimeout(() => {
+      stepTimer = null;
       stepIndex += 1;
+      renderStep(stepIndex, false);
+    }, delay);
+  }
+
+  function resetToStart() {
+    if (stepTimer) {
+      clearTimeout(stepTimer);
+      stepTimer = null;
+    }
+    clearIdleTimer();
+    clearEpilogueTimers();
+    clearBrandReveal();
+    if (pauseMotionTimer) {
+      clearTimeout(pauseMotionTimer);
+      pauseMotionTimer = null;
+      els.scene.classList.remove("is-paused");
+    }
+
+    sequence = STEPS.slice();
+    isAnimating = true;
+
+    els.headline.classList.add("is-leaving");
+    els.subline.classList.add("is-leaving");
+    els.action.classList.add("is-leaving");
+
+    const delay = reducedMotion ? 150 : LEAVE_MS;
+    stepTimer = setTimeout(() => {
+      stepTimer = null;
+      stepIndex = 0;
       renderStep(stepIndex, false);
     }, delay);
   }
@@ -376,6 +427,7 @@
     sequence = returning ? RETURN_STEPS.concat(STEPS) : STEPS.slice();
 
     els.actionBtn.addEventListener("click", goNext);
+    els.brand.addEventListener("click", resetToStart);
     els.actionBtn.addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
