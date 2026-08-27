@@ -43,24 +43,25 @@ body {
   color: rgb(var(--text));
 }
 
-/* ---------- brand mark ---------- */
+/* ---------- brand mark ----------
+   A quiet, permanent signature lockup — monogram + subtle full name,
+   not an interactive reveal. Kept static throughout the experience. */
 
 .brand {
   position: fixed;
   top: max(24px, env(safe-area-inset-top) + 20px);
   left: max(24px, env(safe-area-inset-left) + 24px);
   z-index: 3;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5em;
   appearance: none;
   background: none;
   border: none;
   margin: 0;
   padding: 0.2rem;
   font-family: var(--font);
-  font-weight: 600;
-  font-size: clamp(1.125rem, 0.6vw + 1rem, 1.5rem);
-  letter-spacing: 0.01em;
   line-height: 1;
-  color: rgb(var(--text));
   cursor: pointer;
   white-space: nowrap;
 }
@@ -72,61 +73,25 @@ body {
   }
 }
 
-.brand-lead {
-  display: inline-block;
+.brand-mark {
+  font-size: clamp(0.85rem, 0.3vw + 0.75rem, 0.95rem);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: rgb(var(--text));
 }
 
-.brand-rest,
-.brand-space {
-  display: inline-block;
-  overflow: hidden;
-  max-width: 0;
-  opacity: 0;
-  letter-spacing: -0.06em;
-  transform: translateX(-3px);
-  vertical-align: baseline;
-  transition: max-width 620ms cubic-bezier(0.22, 1, 0.36, 1), opacity 420ms ease, letter-spacing 560ms ease, transform 560ms cubic-bezier(0.22, 1, 0.36, 1);
+.brand-name {
+  font-size: clamp(0.62rem, 0.2vw + 0.56rem, 0.68rem);
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  color: rgb(var(--text));
+  opacity: 0.5;
+  transition: opacity 0.4s ease;
 }
 
-.brand-word--second .brand-rest {
-  transition-delay: 70ms;
-}
-
-.brand-space {
-  transition-delay: 30ms;
-}
-
-.brand:hover .brand-rest,
-.brand:focus-visible .brand-rest,
-.brand.is-revealed .brand-rest,
-.brand:hover .brand-space,
-.brand:focus-visible .brand-space,
-.brand.is-revealed .brand-space {
-  max-width: 9em;
-  opacity: 1;
-  letter-spacing: normal;
-  transform: translateX(0);
-}
-
-.brand.is-revealed .brand-rest,
-.brand.is-revealed .brand-space {
-  transition-duration: 920ms;
-}
-
-.brand:hover .brand-lead,
-.brand:focus-visible .brand-lead,
-.brand.is-revealed .brand-lead {
-  animation: brandTint 650ms ease 1;
-}
-
-.brand.is-revealed .brand-lead {
-  animation-duration: 950ms;
-}
-
-@keyframes brandTint {
-  0% { color: rgb(var(--text)); }
-  42% { color: var(--lavender); }
-  100% { color: rgb(var(--text)); }
+.brand:hover .brand-name,
+.brand:focus-visible .brand-name {
+  opacity: 0.72;
 }
 
 .brand:focus-visible {
@@ -136,15 +101,8 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .brand-rest,
-  .brand-space {
+  .brand-name {
     transition: none;
-  }
-
-  .brand:hover .brand-lead,
-  .brand:focus-visible .brand-lead,
-  .brand.is-revealed .brand-lead {
-    animation: none;
   }
 }
 
@@ -577,25 +535,11 @@ body {
   transform: translateY(0);
 }
 
-.epilogue-line--1 {
-  font-size: 1.05rem;
-  color: rgba(var(--text-secondary), 0.9);
-}
-
+.epilogue-line--1,
 .epilogue-line--2 {
-  font-size: 0.88rem;
+  font-size: 0.95rem;
+  font-weight: 400;
   color: rgba(var(--text-secondary), 0.85);
-}
-
-.epilogue-line--3 {
-  font-size: 0.74rem;
-  font-style: italic;
-  color: rgba(var(--text-secondary), 0.82);
-  opacity: 0;
-}
-
-.epilogue-line--3.is-visible {
-  opacity: 1;
 }
 
 /* ---------- reduced motion ---------- */

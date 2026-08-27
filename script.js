@@ -71,7 +71,6 @@
     epilogue: document.getElementById("epilogue"),
     epilogueLine1: document.getElementById("epilogueLine1"),
     epilogueLine2: document.getElementById("epilogueLine2"),
-    epilogueLine3: document.getElementById("epilogueLine3"),
     scene: document.getElementById("scene"),
     sculpture: document.getElementById("sculpture"),
     sculptureLayers: Array.from(document.querySelectorAll(".sculpture-layer")),
@@ -93,7 +92,6 @@
   let idleTimer = null;
   let epilogueTimers = [];
   let pauseMotionTimer = null;
-  let brandRevealTimer = null;
   let stepTimer = null;
 
   function storyTintFor(p) {
@@ -170,10 +168,8 @@
     epilogueTimers = [];
     els.epilogueLine1.textContent = "";
     els.epilogueLine2.textContent = "";
-    els.epilogueLine3.textContent = "";
     els.epilogueLine1.classList.remove("is-visible");
     els.epilogueLine2.classList.remove("is-visible");
-    els.epilogueLine3.classList.remove("is-visible");
   }
 
   function scheduleFinal() {
@@ -186,36 +182,15 @@
     );
     epilogueTimers.push(
       setTimeout(() => {
-        els.epilogueLine2.textContent = "Vielleicht gibt es dann schon was.";
+        els.epilogueLine2.textContent = "Vielleicht gibt es dann schon etwas.";
         els.epilogueLine2.classList.add("is-visible");
-      }, 3300)
-    );
-    epilogueTimers.push(
-      setTimeout(() => {
-        els.epilogueLine3.textContent = "Keine Garantie.";
-        els.epilogueLine3.classList.add("is-visible");
         try {
           localStorage.setItem(STORAGE_KEY, "1");
         } catch (e) {
           /* localStorage unavailable — experience still works, just won't be remembered */
         }
-      }, 4800)
+      }, 3300)
     );
-  }
-
-  function clearBrandReveal() {
-    if (brandRevealTimer) {
-      clearTimeout(brandRevealTimer);
-      brandRevealTimer = null;
-    }
-    els.brand.classList.remove("is-revealed");
-  }
-
-  function scheduleBrandReveal() {
-    brandRevealTimer = setTimeout(() => {
-      els.brand.classList.add("is-revealed");
-      brandRevealTimer = null;
-    }, 2500);
   }
 
   function renderStep(index, initial) {
@@ -242,7 +217,6 @@
       }
       if (step.final) {
         scheduleFinal();
-        scheduleBrandReveal();
       }
       return;
     }
@@ -272,7 +246,6 @@
       }
       if (step.final) {
         scheduleFinal();
-        scheduleBrandReveal();
       }
     }, settleDelay);
   }
@@ -313,7 +286,6 @@
     }
     clearIdleTimer();
     clearEpilogueTimers();
-    clearBrandReveal();
     if (pauseMotionTimer) {
       clearTimeout(pauseMotionTimer);
       pauseMotionTimer = null;
