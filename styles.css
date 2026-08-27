@@ -77,21 +77,13 @@ body {
   font-size: clamp(0.85rem, 0.3vw + 0.75rem, 0.95rem);
   font-weight: 700;
   letter-spacing: 0.01em;
-  color: rgb(var(--text));
-}
-
-.brand-name {
-  font-size: clamp(0.62rem, 0.2vw + 0.56rem, 0.68rem);
-  font-weight: 400;
-  letter-spacing: 0.05em;
-  color: rgb(var(--text));
-  opacity: 0.5;
+  color: var(--flieder);
   transition: opacity 0.4s ease;
 }
 
-.brand:hover .brand-name,
-.brand:focus-visible .brand-name {
-  opacity: 0.72;
+.brand:hover .brand-mark,
+.brand:focus-visible .brand-mark {
+  opacity: 0.78;
 }
 
 .brand:focus-visible {
@@ -101,7 +93,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .brand-name {
+  .brand-mark {
     transition: none;
   }
 }
@@ -403,7 +395,7 @@ body {
   position: absolute;
   inset: -55% -40%;
   z-index: -1;
-  background: radial-gradient(ellipse, rgba(9, 6, 12, 0.6) 0%, rgba(9, 6, 12, 0.4) 24%, rgba(9, 6, 12, 0.2) 42%, rgba(9, 6, 12, 0.06) 60%, transparent 78%);
+  background: radial-gradient(ellipse, rgba(9, 6, 12, 0.72) 0%, rgba(9, 6, 12, 0.52) 24%, rgba(9, 6, 12, 0.3) 42%, rgba(9, 6, 12, 0.1) 60%, transparent 78%);
   pointer-events: none;
 }
 
@@ -476,7 +468,7 @@ body {
   font-family: inherit;
   font-size: clamp(1rem, 1.6vw, 1.15rem);
   font-weight: 500;
-  color: rgb(var(--text));
+  color: var(--flieder);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
