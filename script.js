@@ -424,22 +424,64 @@
   }
 
   function initScrollHint() {
-    // Surprise 3, desktop only: a reliable "deliberate swipe" signal doesn't
-    // exist on touch (ordinary scroll gestures look identical), so per spec
-    // this is skipped entirely on touch devices rather than guessed at.
-    if (isTouch) return;
-
     let shown = false;
+
+    function trigger() {
+      if (shown) return;
+      shown = true;
+      els.scrollHint.textContent = "Da unten ist auch nichts.";
+      els.scrollHint.classList.add("is-visible");
+      setTimeout(() => {
+        els.scrollHint.classList.remove("is-visible");
+      }, 2500);
+    }
+
+    if (!isTouch) {
+      window.addEventListener(
+        "wheel",
+        (e) => {
+          if (!shown && e.deltaY > 15) trigger();
+        },
+        { passive: true }
+      );
+      return;
+    }
+
+    // Touch: only a clear, mostly-vertical upward drag counts as "trying to
+    // scroll down" — small taps/jitter from ordinary button taps stay well
+    // under this threshold, so it shouldn't fire from normal interaction.
+    let startX = null;
+    let startY = null;
+
     window.addEventListener(
-      "wheel",
+      "touchstart",
       (e) => {
-        if (shown || e.deltaY <= 15) return;
-        shown = true;
-        els.scrollHint.textContent = "Da unten ist auch nichts.";
-        els.scrollHint.classList.add("is-visible");
-        setTimeout(() => {
-          els.scrollHint.classList.remove("is-visible");
-        }, 2500);
+        if (shown) return;
+        const t = e.touches[0];
+        startX = t ? t.clientX : null;
+        startY = t ? t.clientY : null;
+      },
+      { passive: true }
+    );
+
+    window.addEventListener(
+      "touchmove",
+      (e) => {
+        if (shown || startY == null) return;
+        const t = e.touches[0];
+        if (!t) return;
+        const deltaY = startY - t.clientY;
+        const deltaX = Math.abs(startX - t.clientX);
+        if (deltaY > 48 && deltaY > deltaX * 1.5) trigger();
+      },
+      { passive: true }
+    );
+
+    window.addEventListener(
+      "touchend",
+      () => {
+        startX = null;
+        startY = null;
       },
       { passive: true }
     );
