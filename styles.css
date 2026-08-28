@@ -196,15 +196,15 @@ body {
 }
 
 @keyframes ambientDriftA {
-  0% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(-3vw, 3vh, 0) scale(1.05); }
-  100% { transform: translate3d(2vw, -2vh, 0) scale(0.98); }
+  0% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(-3vw, 3vh, 0); }
+  100% { transform: translate3d(2vw, -2vh, 0); }
 }
 
 @keyframes ambientDriftB {
-  0% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(3vw, -2vh, 0) scale(1.04); }
-  100% { transform: translate3d(-2vw, 2vh, 0) scale(0.97); }
+  0% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(3vw, -2vh, 0); }
+  100% { transform: translate3d(-2vw, 2vh, 0); }
 }
 
 @keyframes ambientBreatheA {
@@ -269,21 +269,21 @@ body {
 }
 
 @keyframes sculptureDriftA {
-  0% { transform: rotate(0deg) scale(1); }
-  50% { transform: rotate(6deg) scale(1.04); }
-  100% { transform: rotate(-4deg) scale(0.98); }
+  0% { transform: rotate(0deg); }
+  50% { transform: rotate(6deg); }
+  100% { transform: rotate(-4deg); }
 }
 
 @keyframes sculptureDriftB {
-  0% { transform: scale(0.8) rotate(35deg); }
-  50% { transform: scale(0.84) rotate(24deg); }
-  100% { transform: scale(0.78) rotate(46deg); }
+  0% { transform: scale(0.72) rotate(35deg); }
+  50% { transform: scale(0.72) rotate(24deg); }
+  100% { transform: scale(0.72) rotate(46deg); }
 }
 
 @keyframes sculptureDriftC {
-  0% { transform: scale(0.5) rotate(-20deg); }
-  50% { transform: scale(0.54) rotate(-8deg); }
-  100% { transform: scale(0.47) rotate(-30deg); }
+  0% { transform: scale(0.4) rotate(-20deg); }
+  50% { transform: scale(0.4) rotate(-8deg); }
+  100% { transform: scale(0.4) rotate(-30deg); }
 }
 
 @keyframes sculptureBreatheA {
