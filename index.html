@@ -17,6 +17,13 @@
     <span class="brand-mark">JM</span>
   </button>
 
+  <button class="menu-trigger" id="menuTrigger" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="siteMenu" aria-label="Menü öffnen">
+    <span class="menu-icon" aria-hidden="true">
+      <span class="menu-line menu-line--1"></span>
+      <span class="menu-line menu-line--2"></span>
+    </span>
+  </button>
+
   <div class="scene" id="scene" aria-hidden="true">
     <div class="drift-wrap drift-wrap--a"><div class="ambient ambient-1"></div></div>
     <div class="drift-wrap drift-wrap--b"><div class="ambient ambient-2"></div></div>
@@ -89,6 +96,16 @@
       </div>
     </div>
   </main>
+
+  <div class="site-menu" id="siteMenu" aria-hidden="true" inert>
+    <div class="site-menu-scrim" id="siteMenuScrim"></div>
+    <div class="site-menu-panel" id="siteMenuPanel" role="dialog" aria-modal="true" aria-label="Menü" aria-labelledby="siteMenuTitle" tabindex="-1">
+      <h2 class="site-menu-title" id="siteMenuTitle"></h2>
+      <p class="site-menu-empty" id="siteMenuEmpty"></p>
+      <p class="site-menu-more" id="siteMenuMore" aria-live="polite"></p>
+      <p class="site-menu-poke" id="siteMenuPoke" aria-hidden="true"></p>
+    </div>
+  </div>
 
 <script src="script.js" defer></script>
 </body>

@@ -84,6 +84,15 @@
     touchLight: document.getElementById("touchLight"),
     brand: document.getElementById("brand"),
     scrollHint: document.getElementById("scrollHint"),
+    stage: document.querySelector(".stage"),
+    menuTrigger: document.getElementById("menuTrigger"),
+    siteMenu: document.getElementById("siteMenu"),
+    siteMenuScrim: document.getElementById("siteMenuScrim"),
+    siteMenuPanel: document.getElementById("siteMenuPanel"),
+    siteMenuTitle: document.getElementById("siteMenuTitle"),
+    siteMenuEmpty: document.getElementById("siteMenuEmpty"),
+    siteMenuMore: document.getElementById("siteMenuMore"),
+    siteMenuPoke: document.getElementById("siteMenuPoke"),
   };
 
   const root = document.documentElement;
@@ -95,6 +104,13 @@
   let epilogueTimers = [];
   let pauseMotionTimer = null;
   let stepTimer = null;
+
+  let menuOpen = false;
+  let menuOpenCount = 0;
+  let menuMoreShown = false;
+  let menuPokeShown = false;
+  let menuMoreTimer = null;
+  let menuTextTimers = [];
 
   function storyTintFor(p) {
     if (p >= 0.75) return "#8d5bc5";
@@ -342,6 +358,141 @@
     }, delay);
   }
 
+  // ---------- site menu ----------
+  // A second, self-contained interaction layered on top of the main
+  // experience: a deliberately serious-looking nav that, true to the
+  // site, has nothing behind it. Opening/closing never touches stepIndex,
+  // timers, or localStorage — the main experience is just paused (via
+  // inert) underneath, not reset.
+
+  function clearMenuTextTimers() {
+    menuTextTimers.forEach((id) => clearTimeout(id));
+    menuTextTimers = [];
+  }
+
+  function currentMotionBase() {
+    const step = sequence[stepIndex];
+    return step && step.calm ? 1.7 : 1;
+  }
+
+  function openMenu() {
+    if (menuOpen) return;
+    menuOpen = true;
+    menuOpenCount += 1;
+
+    els.menuTrigger.classList.add("is-open");
+    els.menuTrigger.setAttribute("aria-expanded", "true");
+    els.menuTrigger.setAttribute("aria-label", "Menü schließen");
+    els.siteMenu.classList.add("is-open");
+    els.siteMenu.removeAttribute("inert");
+    els.siteMenu.setAttribute("aria-hidden", "false");
+    document.body.classList.add("menu-open");
+
+    els.brand.inert = true;
+    els.stage.inert = true;
+
+    root.style.setProperty("--motion-scale", String(currentMotionBase() * 1.6));
+
+    clearMenuTextTimers();
+    menuPokeShown = false;
+    els.siteMenuTitle.textContent = "Menü";
+    els.siteMenuEmpty.textContent = menuOpenCount > 1 ? "Immer noch nichts." : "Hier gibt es auch nichts.";
+
+    const titleDelay = reducedMotion ? 80 : 480;
+    const emptyDelay = reducedMotion ? 200 : 1050;
+    menuTextTimers.push(setTimeout(() => els.siteMenuTitle.classList.add("is-visible"), titleDelay));
+    menuTextTimers.push(setTimeout(() => els.siteMenuEmpty.classList.add("is-visible"), emptyDelay));
+
+    if (!menuMoreShown) {
+      if (menuMoreTimer) clearTimeout(menuMoreTimer);
+      menuMoreTimer = setTimeout(() => {
+        if (!menuOpen || menuMoreShown) return;
+        menuMoreShown = true;
+        els.siteMenuMore.textContent = "Mehr kommt nicht.";
+        els.siteMenuMore.classList.add("is-visible");
+      }, 5000);
+    }
+
+    requestAnimationFrame(() => {
+      els.siteMenuPanel.focus({ preventScroll: true });
+    });
+  }
+
+  function closeMenu() {
+    if (!menuOpen) return;
+    menuOpen = false;
+
+    if (menuMoreTimer) {
+      clearTimeout(menuMoreTimer);
+      menuMoreTimer = null;
+    }
+    clearMenuTextTimers();
+
+    els.menuTrigger.classList.remove("is-open");
+    els.menuTrigger.setAttribute("aria-expanded", "false");
+    els.menuTrigger.setAttribute("aria-label", "Menü öffnen");
+    els.siteMenu.classList.remove("is-open");
+    els.siteMenu.setAttribute("aria-hidden", "true");
+    els.siteMenu.setAttribute("inert", "");
+    document.body.classList.remove("menu-open");
+
+    els.siteMenuTitle.classList.remove("is-visible");
+    els.siteMenuEmpty.classList.remove("is-visible");
+    els.siteMenuMore.classList.remove("is-visible");
+    els.siteMenuPoke.classList.remove("is-visible");
+
+    els.brand.inert = false;
+    els.stage.inert = false;
+
+    root.style.setProperty("--motion-scale", String(currentMotionBase()));
+
+    els.menuTrigger.focus();
+  }
+
+  function handleMenuPanelClick(e) {
+    if (!menuOpen || menuPokeShown) return;
+    menuPokeShown = true;
+
+    const rect = els.siteMenuPanel.getBoundingClientRect();
+    const x = e.clientX - rect.left + 22;
+    const y = e.clientY - rect.top + 26;
+
+    els.siteMenuPoke.textContent = "Nein, da auch nicht.";
+    els.siteMenuPoke.style.left = `${Math.min(Math.max(16, x), rect.width - 160)}px`;
+    els.siteMenuPoke.style.top = `${Math.min(Math.max(16, y), rect.height - 40)}px`;
+    els.siteMenuPoke.classList.add("is-visible");
+
+    setTimeout(() => {
+      els.siteMenuPoke.classList.remove("is-visible");
+    }, 2000);
+  }
+
+  function initMenu() {
+    els.menuTrigger.addEventListener("click", () => {
+      if (menuOpen) {
+        closeMenu();
+      } else {
+        openMenu();
+      }
+    });
+
+    els.siteMenuScrim.addEventListener("click", closeMenu);
+    els.siteMenuPanel.addEventListener("click", handleMenuPanelClick);
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && menuOpen) closeMenu();
+    });
+
+    if (!isTouch) {
+      els.menuTrigger.addEventListener("mouseenter", () => {
+        document.body.classList.add("menu-hover");
+      });
+      els.menuTrigger.addEventListener("mouseleave", () => {
+        document.body.classList.remove("menu-hover");
+      });
+    }
+  }
+
   function initPointerEffects() {
     if (isTouch || reducedMotion) return;
 
@@ -440,7 +591,7 @@
       window.addEventListener(
         "wheel",
         (e) => {
-          if (!shown && e.deltaY > 15) trigger();
+          if (!shown && !menuOpen && e.deltaY > 15) trigger();
         },
         { passive: true }
       );
@@ -456,7 +607,7 @@
     window.addEventListener(
       "touchstart",
       (e) => {
-        if (shown) return;
+        if (shown || menuOpen) return;
         const t = e.touches[0];
         startX = t ? t.clientX : null;
         startY = t ? t.clientY : null;
@@ -467,7 +618,7 @@
     window.addEventListener(
       "touchmove",
       (e) => {
-        if (shown || startY == null) return;
+        if (shown || menuOpen || startY == null) return;
         const t = e.touches[0];
         if (!t) return;
         const deltaY = startY - t.clientY;
@@ -513,6 +664,7 @@
     initPointerEffects();
     initTouchLight();
     initScrollHint();
+    initMenu();
 
     renderStep(0, true);
   }

@@ -98,6 +98,238 @@ body {
   }
 }
 
+/* ---------- menu trigger ----------
+   Two thin lines, matching the JM mark's restraint. Morphs into an ×
+   when the menu is open (class toggled directly on this element, so
+   no DOM-order-dependent sibling selectors are needed). */
+
+.menu-trigger {
+  position: fixed;
+  top: max(24px, env(safe-area-inset-top) + 20px);
+  right: max(24px, env(safe-area-inset-right) + 24px);
+  z-index: 5;
+  appearance: none;
+  background: none;
+  border: none;
+  margin: 0;
+  padding: 0.7rem;
+  cursor: pointer;
+}
+
+@media (min-width: 48rem) {
+  .menu-trigger {
+    top: 40px;
+    right: 44px;
+  }
+}
+
+.menu-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.menu-line {
+  display: block;
+  height: 1.5px;
+  width: 22px;
+  background: rgb(var(--text));
+  border-radius: 1px;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), width 0.4s ease, opacity 0.3s ease;
+}
+
+.menu-line--2 {
+  width: 16px;
+}
+
+.menu-trigger:hover .menu-line,
+.menu-trigger:focus-visible .menu-line {
+  width: 22px;
+}
+
+.menu-trigger:hover .menu-icon,
+.menu-trigger:focus-visible .menu-icon {
+  gap: 8px;
+}
+
+.menu-trigger:focus-visible {
+  outline: 2px solid rgba(199, 164, 244, 0.55);
+  outline-offset: 6px;
+  border-radius: 3px;
+}
+
+.menu-trigger.is-open .menu-line--1 {
+  width: 22px;
+  transform: translateY(3.75px) rotate(45deg);
+}
+
+.menu-trigger.is-open .menu-line--2 {
+  width: 22px;
+  transform: translateY(-3.75px) rotate(-45deg);
+}
+
+body.menu-hover .scene {
+  filter: brightness(1.05);
+  transition: filter 0.7s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-line {
+    transition: transform 0.3s ease, width 0.3s ease;
+  }
+}
+
+/* ---------- site menu ----------
+   A dark, editorial panel that slides in from the right — same aubergine
+   world as the rest of the site, with the ambient scene left running
+   (slower, dimmer) behind it rather than replaced by a new palette. */
+
+.site-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+}
+
+.site-menu-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 4, 8, 0.42);
+  opacity: 0;
+  transition: opacity 0.7s ease;
+}
+
+.site-menu-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: min(92vw, 640px);
+  background: linear-gradient(155deg, rgba(13, 10, 16, 0.97) 0%, rgba(26, 16, 32, 0.95) 55%, rgba(20, 12, 26, 0.97) 100%);
+  box-shadow: -70px 0 140px -30px rgba(184, 139, 234, 0.16);
+  transform: translate3d(100%, 0, 0);
+  transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  padding: max(120px, env(safe-area-inset-top) + 104px) max(32px, env(safe-area-inset-right) + 40px) max(48px, env(safe-area-inset-bottom) + 32px) max(32px, env(safe-area-inset-left) + 40px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.site-menu-panel:focus {
+  outline: none;
+}
+
+.site-menu.is-open .site-menu-scrim {
+  opacity: 1;
+}
+
+.site-menu.is-open .site-menu-panel {
+  transform: translate3d(0, 0, 0);
+}
+
+.site-menu-title {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: rgb(var(--text));
+  opacity: 0;
+  filter: blur(6px);
+  transform: translateY(10px);
+  transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1), filter 0.8s cubic-bezier(0.22, 1, 0.36, 1), transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.site-menu-title.is-visible {
+  opacity: 1;
+  filter: blur(0);
+  transform: translateY(0);
+}
+
+.site-menu-empty {
+  margin: 1.4rem 0 0;
+  font-size: clamp(1rem, 1.6vw, 1.15rem);
+  font-weight: 400;
+  color: rgba(var(--text-secondary), 0.82);
+  opacity: 0;
+  filter: blur(6px);
+  transform: translateY(10px);
+  transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1), filter 0.8s cubic-bezier(0.22, 1, 0.36, 1), transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.site-menu-empty.is-visible {
+  opacity: 1;
+  filter: blur(0);
+  transform: translateY(0);
+}
+
+.site-menu-more {
+  position: absolute;
+  left: max(32px, env(safe-area-inset-left) + 40px);
+  bottom: 22vh;
+  margin: 0;
+  font-size: 0.8rem;
+  color: rgba(var(--text-secondary), 0.55);
+  opacity: 0;
+  transition: opacity 1.4s ease;
+}
+
+.site-menu-more.is-visible {
+  opacity: 1;
+}
+
+.site-menu-poke {
+  position: absolute;
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(var(--text-secondary), 0.6);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s ease;
+}
+
+.site-menu-poke.is-visible {
+  opacity: 1;
+}
+
+body.menu-open .scene {
+  filter: brightness(0.6);
+  transition: filter 1s ease;
+}
+
+@media (max-width: 48rem) {
+  .site-menu-panel {
+    width: 100vw;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-menu-scrim {
+    transition-duration: 0.3s;
+  }
+
+  .site-menu-panel {
+    transition: opacity 0.3s ease;
+    transform: none;
+    opacity: 0;
+  }
+
+  .site-menu.is-open .site-menu-panel {
+    opacity: 1;
+  }
+
+  .site-menu-title,
+  .site-menu-empty {
+    transition-property: opacity;
+    transition-duration: 0.4s;
+    filter: none;
+    transform: none;
+  }
+
+  body.menu-open .scene {
+    transition-duration: 0.4s;
+  }
+}
+
 /* ---------- background scene ---------- */
 
 .scene {
