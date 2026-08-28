@@ -112,7 +112,12 @@ body {
   background: none;
   border: none;
   margin: 0;
-  padding: 0.7rem;
+  padding: 0;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
 }
 
@@ -181,9 +186,13 @@ body.menu-hover .scene {
 }
 
 /* ---------- site menu ----------
-   A dark, editorial panel that slides in from the right — same aubergine
-   world as the rest of the site, with the ambient scene left running
-   (slower, dimmer) behind it rather than replaced by a new palette. */
+   A separate dark room, not a transparent overlay: the panel is fully
+   opaque and always takes the entire viewport (desktop and mobile alike),
+   so nothing of the current screen's text can ever read through. The
+   existing light aesthetic reappears inside as its own quiet, self
+   contained glow — reusing the same palette rather than the literal
+   background layer — and visibly settles into a corner as the room
+   opens, as if making space for a navigation that never arrives. */
 
 .site-menu {
   position: fixed;
@@ -194,24 +203,18 @@ body.menu-hover .scene {
 .site-menu-scrim {
   position: absolute;
   inset: 0;
-  background: rgba(6, 4, 8, 0.42);
+  background: rgba(6, 4, 8, 0.6);
   opacity: 0;
-  transition: opacity 0.7s ease;
+  transition: opacity 0.5s ease;
 }
 
 .site-menu-panel {
   position: absolute;
-  top: 0;
-  right: 0;
-  height: 100%;
-  width: min(92vw, 640px);
-  background: linear-gradient(155deg, rgba(13, 10, 16, 0.97) 0%, rgba(26, 16, 32, 0.95) 55%, rgba(20, 12, 26, 0.97) 100%);
-  box-shadow: -70px 0 140px -30px rgba(184, 139, 234, 0.16);
+  inset: 0;
+  background: linear-gradient(155deg, #0d0a10 0%, #1a1020 55%, #120d16 100%);
   transform: translate3d(100%, 0, 0);
-  transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
   padding: max(120px, env(safe-area-inset-top) + 104px) max(32px, env(safe-area-inset-right) + 40px) max(48px, env(safe-area-inset-bottom) + 32px) max(32px, env(safe-area-inset-left) + 40px);
-  display: flex;
-  flex-direction: column;
   overflow: hidden;
 }
 
@@ -227,10 +230,74 @@ body.menu-hover .scene {
   transform: translate3d(0, 0, 0);
 }
 
-.site-menu-title {
+/* The menu's own quiet light — same palette as the main scene, but a
+   single self-contained glow rather than the literal background, so
+   opacity can stay effectively opaque without losing that connection. */
+
+.site-menu-light-wrap {
+  position: absolute;
+  inset: 0;
+  animation: menuLightDrift 48s ease-in-out infinite alternate;
+}
+
+.site-menu-light {
+  position: absolute;
+  top: 46%;
+  left: 42%;
+  width: 62vmax;
+  height: 62vmax;
+  transform: translate3d(-50%, -50%, 0);
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--violet) 0%, rgba(141, 91, 197, 0.3) 34%, transparent 68%);
+  filter: blur(100px);
+  opacity: 0.5;
+  mix-blend-mode: screen;
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.9s ease;
+}
+
+.site-menu.is-open .site-menu-light {
+  transform: translate3d(calc(-50% + 26vw), calc(-50% - 20vh), 0);
+  opacity: 0.3;
+}
+
+@keyframes menuLightDrift {
+  0% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  50% { transform: translate3d(3vw, -2vh, 0) rotate(1.2deg); }
+  100% { transform: translate3d(-2vw, 3vh, 0) rotate(-0.8deg); }
+}
+
+/* Small area label, not a headline — reads as a section marker, not content. */
+.site-menu-label {
+  position: relative;
+  z-index: 1;
   margin: 0;
-  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-size: 0.72rem;
   font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(var(--text), 0.5);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.site-menu-label.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* The punchline itself — deliberately not stacked under the label,
+   placed with a lot of empty space around it, slightly off-center. */
+.site-menu-reaction {
+  position: absolute;
+  z-index: 1;
+  left: max(32px, env(safe-area-inset-left) + 40px);
+  right: max(32px, env(safe-area-inset-right) + 40px);
+  top: 40%;
+  max-width: min(82vw, 30rem);
+  margin: 0;
+  font-size: clamp(1.35rem, 3.4vw, 2.1rem);
+  font-weight: 500;
   letter-spacing: -0.01em;
   color: rgb(var(--text));
   opacity: 0;
@@ -239,36 +306,23 @@ body.menu-hover .scene {
   transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1), filter 0.8s cubic-bezier(0.22, 1, 0.36, 1), transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.site-menu-title.is-visible {
+.site-menu-reaction.is-visible {
   opacity: 1;
   filter: blur(0);
   transform: translateY(0);
 }
 
-.site-menu-empty {
-  margin: 1.4rem 0 0;
-  font-size: clamp(1rem, 1.6vw, 1.15rem);
-  font-weight: 400;
-  color: rgba(var(--text-secondary), 0.82);
-  opacity: 0;
-  filter: blur(6px);
-  transform: translateY(10px);
-  transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1), filter 0.8s cubic-bezier(0.22, 1, 0.36, 1), transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.site-menu-empty.is-visible {
-  opacity: 1;
-  filter: blur(0);
-  transform: translateY(0);
-}
-
+/* Kept far from the reaction text, low and quiet — as if said from a
+   distance rather than as part of the same thought. */
 .site-menu-more {
   position: absolute;
+  z-index: 1;
   left: max(32px, env(safe-area-inset-left) + 40px);
-  bottom: 22vh;
+  right: max(32px, env(safe-area-inset-right) + 40px);
+  bottom: max(10vh, env(safe-area-inset-bottom) + 3rem);
   margin: 0;
-  font-size: 0.8rem;
-  color: rgba(var(--text-secondary), 0.55);
+  font-size: 0.78rem;
+  color: rgba(var(--text-secondary), 0.42);
   opacity: 0;
   transition: opacity 1.4s ease;
 }
@@ -279,9 +333,11 @@ body.menu-hover .scene {
 
 .site-menu-poke {
   position: absolute;
+  z-index: 1;
   margin: 0;
+  max-width: min(60vw, 16rem);
   font-size: 0.85rem;
-  color: rgba(var(--text-secondary), 0.6);
+  color: var(--lavender);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.6s ease;
@@ -292,19 +348,26 @@ body.menu-hover .scene {
 }
 
 body.menu-open .scene {
-  filter: brightness(0.6);
+  filter: brightness(0.5);
   transition: filter 1s ease;
-}
-
-@media (max-width: 48rem) {
-  .site-menu-panel {
-    width: 100vw;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .site-menu-scrim {
     transition-duration: 0.3s;
+  }
+
+  .site-menu-light-wrap {
+    animation: none;
+  }
+
+  .site-menu-light {
+    transition: opacity 0.4s ease;
+    transform: translate3d(-50%, -50%, 0);
+  }
+
+  .site-menu.is-open .site-menu-light {
+    transform: translate3d(-50%, -50%, 0);
   }
 
   .site-menu-panel {
@@ -317,8 +380,8 @@ body.menu-open .scene {
     opacity: 1;
   }
 
-  .site-menu-title,
-  .site-menu-empty {
+  .site-menu-label,
+  .site-menu-reaction {
     transition-property: opacity;
     transition-duration: 0.4s;
     filter: none;

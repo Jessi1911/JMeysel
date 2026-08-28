@@ -375,6 +375,30 @@
     return step && step.calm ? 1.7 : 1;
   }
 
+  // Real per-session open count, not just a first/second toggle — the
+  // site's patience visibly runs out by the fourth attempt.
+  function menuReactionFor(count) {
+    if (count <= 1) return "Hier gibt es auch nichts.";
+    if (count === 2) return "Immer noch nichts.";
+    if (count === 3) return "Du prüfst wirklich gründlich.";
+    return "Nein.";
+  }
+
+  // The pause between the small "Menü" label and the punchline shortens
+  // a little each time — by the fourth-plus open the site barely waits.
+  function menuReactionPauseFor(count) {
+    if (reducedMotion) {
+      if (count <= 1) return 260;
+      if (count === 2) return 200;
+      if (count === 3) return 150;
+      return 90;
+    }
+    if (count <= 1) return 700;
+    if (count === 2) return 550;
+    if (count === 3) return 420;
+    return 220;
+  }
+
   function openMenu() {
     if (menuOpen) return;
     menuOpen = true;
@@ -395,13 +419,12 @@
 
     clearMenuTextTimers();
     menuPokeShown = false;
-    els.siteMenuTitle.textContent = "Menü";
-    els.siteMenuEmpty.textContent = menuOpenCount > 1 ? "Immer noch nichts." : "Hier gibt es auch nichts.";
+    els.siteMenuEmpty.textContent = menuReactionFor(menuOpenCount);
 
-    const titleDelay = reducedMotion ? 80 : 480;
-    const emptyDelay = reducedMotion ? 200 : 1050;
-    menuTextTimers.push(setTimeout(() => els.siteMenuTitle.classList.add("is-visible"), titleDelay));
-    menuTextTimers.push(setTimeout(() => els.siteMenuEmpty.classList.add("is-visible"), emptyDelay));
+    const labelDelay = reducedMotion ? 60 : 700;
+    const reactionDelay = labelDelay + menuReactionPauseFor(menuOpenCount);
+    menuTextTimers.push(setTimeout(() => els.siteMenuTitle.classList.add("is-visible"), labelDelay));
+    menuTextTimers.push(setTimeout(() => els.siteMenuEmpty.classList.add("is-visible"), reactionDelay));
 
     if (!menuMoreShown) {
       if (menuMoreTimer) clearTimeout(menuMoreTimer);
@@ -454,12 +477,14 @@
     menuPokeShown = true;
 
     const rect = els.siteMenuPanel.getBoundingClientRect();
-    const x = e.clientX - rect.left + 22;
-    const y = e.clientY - rect.top + 26;
+    const pokeWidth = 190;
+    const pokeHeight = 40;
+    const x = e.clientX - rect.left + 28;
+    const y = e.clientY - rect.top + 32;
 
     els.siteMenuPoke.textContent = "Nein, da auch nicht.";
-    els.siteMenuPoke.style.left = `${Math.min(Math.max(16, x), rect.width - 160)}px`;
-    els.siteMenuPoke.style.top = `${Math.min(Math.max(16, y), rect.height - 40)}px`;
+    els.siteMenuPoke.style.left = `${Math.min(Math.max(16, x), rect.width - pokeWidth)}px`;
+    els.siteMenuPoke.style.top = `${Math.min(Math.max(16, y), rect.height - pokeHeight)}px`;
     els.siteMenuPoke.classList.add("is-visible");
 
     setTimeout(() => {
@@ -476,7 +501,9 @@
       }
     });
 
-    els.siteMenuScrim.addEventListener("click", closeMenu);
+    // The menu now always takes the full viewport, so the scrim is purely
+    // a background dimming layer — there is no "outside the panel" area
+    // left to click, closing happens via the × or Escape only.
     els.siteMenuPanel.addEventListener("click", handleMenuPanelClick);
 
     document.addEventListener("keydown", (e) => {
