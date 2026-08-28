@@ -18,10 +18,10 @@
   </button>
 
   <div class="scene" id="scene" aria-hidden="true">
-    <div class="ambient ambient-1"></div>
-    <div class="ambient ambient-2"></div>
+    <div class="drift-wrap drift-wrap--a"><div class="ambient ambient-1"></div></div>
+    <div class="drift-wrap drift-wrap--b"><div class="ambient ambient-2"></div></div>
 
-    <div class="sculpture" id="sculpture">
+    <div class="drift-wrap drift-wrap--sculpture"><div class="sculpture" id="sculpture">
       <svg class="sculpture-layer sculpture-layer--1" viewBox="0 0 600 600" aria-hidden="true">
         <defs>
           <radialGradient id="grad1" cx="42%" cy="38%" r="88%">
@@ -55,7 +55,7 @@
         </defs>
         <path d="M320,40 C440,20 560,120 560,240 C560,340 500,400 460,460 C420,520 340,560 260,540 C180,520 120,460 90,380 C60,300 80,200 150,140 C210,90 260,55 320,40 Z" fill="url(#grad3)" />
       </svg>
-    </div>
+    </div></div>
 
     <div class="story-light" id="storyLight"></div>
     <div class="spark" id="spark" aria-hidden="true"></div>
@@ -67,8 +67,11 @@
     <div class="grain"></div>
   </div>
 
+  <p class="scroll-hint" id="scrollHint" aria-live="polite"></p>
+
   <main class="stage">
     <div class="text-wrap" id="textWrap">
+      <p class="greeting" id="greeting"></p>
       <h1 class="headline" id="headline"></h1>
       <p class="subline" id="subline"></p>
 

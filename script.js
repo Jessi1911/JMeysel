@@ -39,20 +39,20 @@
   ];
 
   const STEPS = [
-    { headline: "Hier gibt es<br>noch nichts.", subline: "Du kannst trotzdem ein bisschen bleiben.", button: "Okay.", scale: 1 },
+    { headline: "Hier gibt es<br>noch nichts.", subline: "Du kannst trotzdem ein bisschen bleiben.", button: "Okay.", scale: 1, greeting: "Oh, hi." },
     { headline: "Du bist noch da.", subline: "Schön.", button: "Ja.", scale: 1.1 },
     { headline: "Ich sollte vielleicht<br>erwähnen:", subline: "Hier kommt wirklich noch nichts.", button: "Macht nichts.", scale: 0.92 },
     { headline: "Gut.", subline: "Dann haben wir das geklärt.", button: "Gut.", scale: 1.55 },
     { headline: "Eigentlich ganz<br>angenehm hier.", subline: "So ohne alles.", button: "Stimmt.", scale: 0.95 },
     { headline: "Kein Newsletter.", subline: "Kein Pop-up. Kein „Jetzt entdecken“.", button: "Herrlich.", scale: 1.15, newsletter: true },
     { headline: "Nicht mal Cookies.", subline: "Also … vermutlich schon irgendwann. Aber heute nicht.", button: "Sehr gut.", scale: 1.05 },
-    { headline: "Wir könnten es einfach<br>dabei belassen.", subline: "Eine leere Seite. Ein bisschen Flieder.", button: "Reicht doch.", scale: 0.82 },
+    { headline: "Wir könnten es einfach<br>dabei belassen.", subline: "Eine leere Seite. Ein bisschen Flieder.", button: "Reicht doch.", scale: 0.82, entranceDelay: 1100 },
     { headline: "Finde ich auch.", subline: "Wobei das hier inzwischen verdächtig nach Inhalt aussieht.", button: "Ein bisschen.", scale: 1.05 },
-    { headline: "Mist.", subline: "So war das nicht geplant.", button: "Zu spät.", scale: 1.6, pauseMotion: true },
+    { headline: "Mist.", subline: "So war das nicht geplant.", button: "Zu spät.", scale: 1.6, pauseMotion: true, noEntrance: true },
     { headline: "Na gut.", subline: "Dann machen wir eben eine Website daraus.", button: "Irgendwann.", scale: 1.15 },
     { headline: "Irgendwann<br>klingt gut.", subline: "Heute haben wir schließlich schon genug geschafft.", button: "Absolut.", scale: 0.95 },
     { headline: "Dann wäre<br>das geklärt.", subline: "Ich bleibe hier. Du kannst machen, was du willst.", button: "Klingt fair.", scale: 0.92 },
-    { headline: "Eine Sache noch.", subline: "", button: "Ja?", scale: 1, calm: true },
+    { headline: "Eine Sache noch.", subline: "", button: "Ja?", scale: 1, calm: true, lightDip: 0.82 },
     { headline: "Schön, dass du<br>dageblieben bist.", subline: "Wirklich.", button: null, scale: 1.1, final: true },
   ].map((step, i, arr) => ({ ...step, p: i / (arr.length - 1), title: TITLES[i], pos: POSITIONS[i] }));
 
@@ -62,6 +62,7 @@
   ];
 
   const els = {
+    greeting: document.getElementById("greeting"),
     headline: document.getElementById("headline"),
     subline: document.getElementById("subline"),
     action: document.getElementById("action"),
@@ -82,6 +83,7 @@
     cursorLight: document.getElementById("cursorLight"),
     touchLight: document.getElementById("touchLight"),
     brand: document.getElementById("brand"),
+    scrollHint: document.getElementById("scrollHint"),
   };
 
   const root = document.documentElement;
@@ -102,19 +104,23 @@
 
   function applyVisual(step) {
     const p = step.p;
+    // A quiet dip before the finale (see STEPS[13].lightDip) — the room gets
+    // a touch darker and calmer right before it warms back up. 1 everywhere
+    // else, so this never changes the existing per-screen curve.
+    const dip = step.lightDip || 1;
 
     els.sculptureLayers.forEach((el, i) => {
       const curves = [0.06 + 0.4 * p, 0.36 * Math.max(0, (p - 0.12) / 0.88), 0.32 * Math.max(0, (p - 0.3) / 0.7)];
-      el.style.opacity = String(curves[i] || 0);
+      el.style.opacity = String((curves[i] || 0) * dip);
     });
     root.style.setProperty("--sculpture-rot", `${(p * 16).toFixed(1)}deg`);
 
     els.ambientEls.forEach((el, i) => {
       const curves = [0.15 + 0.35 * p, 0.1 + 0.4 * Math.max(0, (p - 0.2) / 0.8)];
-      el.style.opacity = String(curves[i] || 0);
+      el.style.opacity = String((curves[i] || 0) * dip);
     });
 
-    els.storyLight.style.opacity = String(0.05 + 0.42 * p);
+    els.storyLight.style.opacity = String((0.05 + 0.42 * p) * dip);
     const size = 38 + p * 30;
     els.storyLight.style.width = `${size}vw`;
     els.storyLight.style.height = `${size}vw`;
@@ -145,7 +151,7 @@
     pauseMotionTimer = setTimeout(() => {
       els.scene.classList.remove("is-paused");
       pauseMotionTimer = null;
-    }, 900);
+    }, 420);
   }
 
   function clearIdleTimer() {
@@ -197,6 +203,7 @@
     const step = sequence[index];
     els.headline.innerHTML = step.headline;
     els.subline.textContent = step.subline;
+    els.greeting.textContent = step.greeting || "";
 
     applyVisual(step);
 
@@ -210,6 +217,15 @@
       els.action.style.display = "none";
     }
 
+    if (step.greeting && !reducedMotion) {
+      els.greeting.classList.add("is-entering");
+      requestAnimationFrame(() => {
+        els.greeting.classList.remove("is-entering");
+      });
+    } else {
+      els.greeting.classList.remove("is-entering");
+    }
+
     if (initial) {
       isAnimating = false;
       if (step.button) {
@@ -221,15 +237,30 @@
       return;
     }
 
-    const enterClasses = reducedMotion ? [] : ["is-entering"];
-    els.headline.classList.add(...enterClasses);
-    els.subline.classList.add(...enterClasses);
+    // Surprise: "Mist." skips the entrance treatment entirely — it just
+    // lands, blunt and instant, instead of fading/blurring in like every
+    // other headline.
+    if (step.noEntrance) {
+      els.headline.classList.add("no-transition");
+      els.headline.classList.remove("is-leaving", "is-entering");
+      // eslint-disable-next-line no-unused-expressions
+      els.headline.offsetWidth;
+      requestAnimationFrame(() => els.headline.classList.remove("no-transition"));
+    } else if (!reducedMotion) {
+      els.headline.classList.add("is-entering");
+    }
+
+    if (!reducedMotion) {
+      els.subline.classList.add("is-entering");
+    }
     if (step.button) {
       els.action.classList.add("is-entering");
     }
 
     requestAnimationFrame(() => {
-      els.headline.classList.remove("is-leaving", "is-entering");
+      if (!step.noEntrance) {
+        els.headline.classList.remove("is-leaving", "is-entering");
+      }
       els.subline.classList.remove("is-leaving", "is-entering");
       els.action.classList.remove("is-leaving", "is-entering");
     });
@@ -271,7 +302,11 @@
     els.subline.classList.add("is-leaving");
     els.action.classList.add("is-leaving");
 
-    const delay = reducedMotion ? 150 : LEAVE_MS;
+    // Surprise: a couple of screens hold an extra beat of nothing-but-light
+    // before their text lands — see STEPS[].entranceDelay.
+    const upcoming = sequence[stepIndex + 1];
+    const extraDelay = (upcoming && upcoming.entranceDelay) || 0;
+    const delay = (reducedMotion ? 150 : LEAVE_MS) + extraDelay;
     stepTimer = setTimeout(() => {
       stepTimer = null;
       stepIndex += 1;
@@ -388,6 +423,28 @@
     });
   }
 
+  function initScrollHint() {
+    // Surprise 3, desktop only: a reliable "deliberate swipe" signal doesn't
+    // exist on touch (ordinary scroll gestures look identical), so per spec
+    // this is skipped entirely on touch devices rather than guessed at.
+    if (isTouch) return;
+
+    let shown = false;
+    window.addEventListener(
+      "wheel",
+      (e) => {
+        if (shown || e.deltaY <= 15) return;
+        shown = true;
+        els.scrollHint.textContent = "Da unten ist auch nichts.";
+        els.scrollHint.classList.add("is-visible");
+        setTimeout(() => {
+          els.scrollHint.classList.remove("is-visible");
+        }, 2500);
+      },
+      { passive: true }
+    );
+  }
+
   function start() {
     let returning = false;
     try {
@@ -413,6 +470,7 @@
 
     initPointerEffects();
     initTouchLight();
+    initScrollHint();
 
     renderStep(0, true);
   }
