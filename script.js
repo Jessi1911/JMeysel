@@ -89,10 +89,15 @@
     siteMenu: document.getElementById("siteMenu"),
     siteMenuScrim: document.getElementById("siteMenuScrim"),
     siteMenuPanel: document.getElementById("siteMenuPanel"),
-    siteMenuTitle: document.getElementById("siteMenuTitle"),
     siteMenuEmpty: document.getElementById("siteMenuEmpty"),
     siteMenuMore: document.getElementById("siteMenuMore"),
-    siteMenuPoke: document.getElementById("siteMenuPoke"),
+    siteMenuNichtsBoost: document.getElementById("siteMenuNichtsBoost"),
+    siteMenuTaps: [
+      document.getElementById("siteMenuTap1"),
+      document.getElementById("siteMenuTap2"),
+      document.getElementById("siteMenuTap3"),
+      document.getElementById("siteMenuTap4"),
+    ],
   };
 
   const root = document.documentElement;
@@ -108,9 +113,28 @@
   let menuOpen = false;
   let menuOpenCount = 0;
   let menuMoreShown = false;
-  let menuPokeShown = false;
   let menuMoreTimer = null;
   let menuTextTimers = [];
+  let menuTapIndex = 0;
+  let menuTapHideTimers = [null, null, null, null];
+  let menuLastTapText = null;
+  let menuTapsShown = new Set();
+  let menuNichtsBoostTimer = null;
+
+  const MENU_TAP_TEXTS = [
+    "Hier ist auch nichts.",
+    "Da auch nicht.",
+    "Nope.",
+    "Nichts.",
+    "Leider nein.",
+    "Auch leer.",
+    "Netter Versuch.",
+    "Du kannst weitersuchen.",
+    "Wirklich nichts.",
+    "Ich hab nachgesehen.",
+  ];
+  const MENU_TAP_RARE_TEXT = "Was genau suchst du eigentlich?";
+  const MENU_TAP_SHORT_TEXTS = new Set(["Nope.", "Nichts."]);
 
   function storyTintFor(p) {
     if (p >= 0.75) return "#8d5bc5";
@@ -384,19 +408,24 @@
     return "Nein.";
   }
 
-  // The pause between the small "Menü" label and the punchline shortens
-  // a little each time — by the fourth-plus open the site barely waits.
-  function menuReactionPauseFor(count) {
+  // Without a "Menü" label to hold a beat, the delay before the reaction
+  // now runs straight off the open — still long enough on the first
+  // couple of opens to let the room register, shortening each time.
+  function menuReactionDelayFor(count) {
     if (reducedMotion) {
-      if (count <= 1) return 260;
-      if (count === 2) return 200;
-      if (count === 3) return 150;
-      return 90;
+      if (count <= 1) return 320;
+      if (count === 2) return 260;
+      if (count === 3) return 200;
+      return 120;
     }
-    if (count <= 1) return 700;
-    if (count === 2) return 550;
-    if (count === 3) return 420;
-    return 220;
+    if (count <= 1) return 1400;
+    if (count === 2) return 1250;
+    if (count === 3) return 1120;
+    return 920;
+  }
+
+  function menuReactionTierFor(count) {
+    return count >= 4 ? "4plus" : String(count);
   }
 
   function openMenu() {
@@ -418,12 +447,10 @@
     root.style.setProperty("--motion-scale", String(currentMotionBase() * 1.6));
 
     clearMenuTextTimers();
-    menuPokeShown = false;
+    els.siteMenuEmpty.className = "site-menu-reaction site-menu-reaction--" + menuReactionTierFor(menuOpenCount);
     els.siteMenuEmpty.textContent = menuReactionFor(menuOpenCount);
 
-    const labelDelay = reducedMotion ? 60 : 700;
-    const reactionDelay = labelDelay + menuReactionPauseFor(menuOpenCount);
-    menuTextTimers.push(setTimeout(() => els.siteMenuTitle.classList.add("is-visible"), labelDelay));
+    const reactionDelay = menuReactionDelayFor(menuOpenCount);
     menuTextTimers.push(setTimeout(() => els.siteMenuEmpty.classList.add("is-visible"), reactionDelay));
 
     if (!menuMoreShown) {
@@ -451,6 +478,18 @@
     }
     clearMenuTextTimers();
 
+    if (menuNichtsBoostTimer) {
+      clearTimeout(menuNichtsBoostTimer);
+      menuNichtsBoostTimer = null;
+    }
+    els.siteMenuNichtsBoost.classList.remove("is-active");
+
+    menuTapHideTimers.forEach((id) => {
+      if (id) clearTimeout(id);
+    });
+    menuTapHideTimers = [null, null, null, null];
+    els.siteMenuTaps.forEach((el) => el.classList.remove("is-visible"));
+
     els.menuTrigger.classList.remove("is-open");
     els.menuTrigger.setAttribute("aria-expanded", "false");
     els.menuTrigger.setAttribute("aria-label", "Menü öffnen");
@@ -459,10 +498,8 @@
     els.siteMenu.setAttribute("inert", "");
     document.body.classList.remove("menu-open");
 
-    els.siteMenuTitle.classList.remove("is-visible");
     els.siteMenuEmpty.classList.remove("is-visible");
     els.siteMenuMore.classList.remove("is-visible");
-    els.siteMenuPoke.classList.remove("is-visible");
 
     els.brand.inert = false;
     els.stage.inert = false;
@@ -472,24 +509,87 @@
     els.menuTrigger.focus();
   }
 
-  function handleMenuPanelClick(e) {
-    if (!menuOpen || menuPokeShown) return;
-    menuPokeShown = true;
+  // Never the same line twice in a row; the rare line stays rare; short
+  // lines get picked slightly more often; unseen lines are preferred
+  // while the session still has fresh ones left.
+  function pickMenuTapText() {
+    if (Math.random() < 0.08 && menuLastTapText !== MENU_TAP_RARE_TEXT) {
+      return MENU_TAP_RARE_TEXT;
+    }
+    const pool = [];
+    MENU_TAP_TEXTS.forEach((t) => {
+      pool.push(t);
+      if (MENU_TAP_SHORT_TEXTS.has(t)) pool.push(t);
+    });
+    let candidates = pool.filter((t) => t !== menuLastTapText);
+    const unseen = candidates.filter((t) => !menuTapsShown.has(t));
+    if (unseen.length) candidates = unseen;
+    return candidates[Math.floor(Math.random() * candidates.length)];
+  }
 
-    const rect = els.siteMenuPanel.getBoundingClientRect();
-    const pokeWidth = 190;
-    const pokeHeight = 40;
-    const x = e.clientX - rect.left + 28;
-    const y = e.clientY - rect.top + 32;
+  function showMenuTapReaction(clientX, clientY, rect) {
+    const text = pickMenuTapText();
+    menuLastTapText = text;
+    menuTapsShown.add(text);
 
-    els.siteMenuPoke.textContent = "Nein, da auch nicht.";
-    els.siteMenuPoke.style.left = `${Math.min(Math.max(16, x), rect.width - pokeWidth)}px`;
-    els.siteMenuPoke.style.top = `${Math.min(Math.max(16, y), rect.height - pokeHeight)}px`;
-    els.siteMenuPoke.classList.add("is-visible");
+    const el = els.siteMenuTaps[menuTapIndex];
+    const slot = menuTapIndex;
+    menuTapIndex = (menuTapIndex + 1) % els.siteMenuTaps.length;
 
-    setTimeout(() => {
-      els.siteMenuPoke.classList.remove("is-visible");
+    if (menuTapHideTimers[slot]) clearTimeout(menuTapHideTimers[slot]);
+    el.classList.remove("is-visible");
+
+    const margin = 20;
+    const estWidth = 210;
+    const estHeight = 34;
+    const offsetX = 24 + Math.random() * 20;
+    const offsetY = 22 + Math.random() * 18;
+    let x = clientX - rect.left + offsetX;
+    let y = clientY - rect.top + offsetY;
+    if (x + estWidth > rect.width - margin) x = clientX - rect.left - offsetX - estWidth;
+    if (y + estHeight > rect.height - margin) y = clientY - rect.top - offsetY - estHeight;
+    x = Math.max(margin, Math.min(x, rect.width - estWidth - margin));
+    y = Math.max(margin, Math.min(y, rect.height - estHeight - margin));
+
+    el.textContent = text;
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
+    // eslint-disable-next-line no-unused-expressions
+    el.offsetWidth;
+    el.classList.add("is-visible");
+
+    menuTapHideTimers[slot] = setTimeout(() => {
+      el.classList.remove("is-visible");
+      menuTapHideTimers[slot] = null;
     }, 2000);
+  }
+
+  function triggerNichtsBoost(clientX, clientY) {
+    // background-position percentages follow a "container/image size
+    // difference" formula, not a simple "point at X%" mapping — since the
+    // spot is much smaller than the giant NICHTS box, that formula would
+    // place it far from the actual tap. Pixel offsets (positioning the
+    // spot's own top-left so its center lands exactly on the tap) avoid
+    // that entirely.
+    const rect = els.siteMenuNichtsBoost.getBoundingClientRect();
+    const spotSize = window.innerWidth * 0.24;
+    const x = clientX - rect.left - spotSize / 2;
+    const y = clientY - rect.top - spotSize / 2;
+    els.siteMenuNichtsBoost.style.setProperty("--tap-x", `${x}px`);
+    els.siteMenuNichtsBoost.style.setProperty("--tap-y", `${y}px`);
+    els.siteMenuNichtsBoost.classList.add("is-active");
+    if (menuNichtsBoostTimer) clearTimeout(menuNichtsBoostTimer);
+    menuNichtsBoostTimer = setTimeout(() => {
+      els.siteMenuNichtsBoost.classList.remove("is-active");
+      menuNichtsBoostTimer = null;
+    }, 1100);
+  }
+
+  function handleMenuPanelClick(e) {
+    if (!menuOpen) return;
+    const rect = els.siteMenuPanel.getBoundingClientRect();
+    showMenuTapReaction(e.clientX, e.clientY, rect);
+    if (!reducedMotion) triggerNichtsBoost(e.clientX, e.clientY);
   }
 
   function initMenu() {
@@ -501,13 +601,17 @@
       }
     });
 
-    // The menu now always takes the full viewport, so the scrim is purely
-    // a background dimming layer — there is no "outside the panel" area
+    // The menu always takes the full viewport, so the scrim is purely a
+    // background dimming layer — there is no "outside the panel" area
     // left to click, closing happens via the × or Escape only.
     els.siteMenuPanel.addEventListener("click", handleMenuPanelClick);
 
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && menuOpen) closeMenu();
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      els.siteMenu.classList.toggle("is-paused", document.hidden);
     });
 
     if (!isTouch) {
