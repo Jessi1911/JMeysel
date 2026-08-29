@@ -538,6 +538,13 @@
     return !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
   }
 
+  function overlapAreaOf(a, b) {
+    const w = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+    const h = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+    if (w <= 0 || h <= 0) return 0;
+    return w * h;
+  }
+
   function padRect(r, pad) {
     return { left: r.left - pad, top: r.top - pad, right: r.right + pad, bottom: r.bottom + pad };
   }
@@ -614,18 +621,35 @@
       { x: localX - offsetX - w, y: localY + offsetY },
       { x: localX - w / 2, y: localY - offsetY - h },
       { x: localX - w / 2, y: localY + offsetY + h * 1.6 },
-      { x: localX + offsetX + w * 1.8, y: localY + offsetY + h * 1.4 },
     ];
 
-    let fallback = null;
+    // Offsets sized to the new (small) reaction aren't necessarily big
+    // enough to clear a much larger obstacle — the huge "Nein." especially.
+    // Jump straight to just outside each occupied rect too, sized to
+    // *that* rect instead.
+    occupied.forEach((o) => {
+      candidates.push(
+        { x: o.left, y: o.top - h - 12 },
+        { x: o.left, y: o.bottom + 12 },
+        { x: o.left - w - 12, y: o.top },
+        { x: o.right + 12, y: o.top }
+      );
+    });
+
+    let best = null;
+    let bestOverlap = Infinity;
     for (const c of candidates) {
       const x = Math.min(Math.max(minX, c.x), maxX);
       const y = Math.min(Math.max(minY, c.y), maxY);
       const rect = { left: x, top: y, right: x + w, bottom: y + h };
-      if (!fallback) fallback = { x, y };
-      if (!occupied.some((o) => rectsOverlap(rect, o))) return { x, y };
+      const totalOverlap = occupied.reduce((sum, o) => sum + overlapAreaOf(rect, o), 0);
+      if (totalOverlap === 0) return { x, y };
+      if (totalOverlap < bestOverlap) {
+        bestOverlap = totalOverlap;
+        best = { x, y };
+      }
     }
-    return fallback;
+    return best;
   }
 
   function showMenuTapReaction(clientX, clientY, panelRect) {
