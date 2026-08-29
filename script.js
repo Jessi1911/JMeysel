@@ -20,22 +20,25 @@
   // A deliberate, non-random position per screen — a quiet choreography through
   // the viewport rather than a fixed layout. Values are vw/vh so they scale
   // down naturally (and are additionally damped, see styles.css) on mobile.
+  // Baseline shifted +5vh across the board for better optical centering
+  // (the stage's flex-center otherwise sits a bit high); each screen's own
+  // relative offset from that baseline is unchanged.
   const POSITIONS = [
-    { x: "0vw", y: "0vh" }, // 1 — central
-    { x: "-6vw", y: "-3.5vh" }, // 2 — leicht links, etwas höher
-    { x: "5vw", y: "0vh" }, // 3 — leicht rechts
-    { x: "2vw", y: "-1vh" }, // 4 — wieder näher zur Mitte
-    { x: "-5vw", y: "3.5vh" }, // 5 — links unten
-    { x: "4vw", y: "0vh" }, // 6 — etwas rechts der Mitte
-    { x: "0vw", y: "0vh" }, // 7 — zentral, ruhig
-    { x: "-4vw", y: "0vh" }, // 8 — leicht links
-    { x: "6vw", y: "0vh" }, // 9 — rechts
-    { x: "0vw", y: "0vh" }, // 10 — zentral
-    { x: "-4vw", y: "-2.5vh" }, // 11 — etwas links und höher
-    { x: "4vw", y: "2.5vh" }, // 12 — leicht rechts und tiefer
-    { x: "2vw", y: "-1vh" }, // 13 — zurück Richtung Mitte
-    { x: "0vw", y: "0vh" }, // 14 — zentral, sehr ruhig
-    { x: "0vw", y: "5vh" }, // 15 — klar zentriert, etwas tiefer für optische Mitte
+    { x: "0vw", y: "5vh" }, // 1 — central
+    { x: "-6vw", y: "1.5vh" }, // 2 — leicht links, etwas höher
+    { x: "5vw", y: "5vh" }, // 3 — leicht rechts
+    { x: "2vw", y: "4vh" }, // 4 — wieder näher zur Mitte
+    { x: "-5vw", y: "8.5vh" }, // 5 — links unten
+    { x: "4vw", y: "5vh" }, // 6 — etwas rechts der Mitte
+    { x: "0vw", y: "5vh" }, // 7 — zentral, ruhig
+    { x: "-4vw", y: "5vh" }, // 8 — leicht links
+    { x: "6vw", y: "5vh" }, // 9 — rechts
+    { x: "0vw", y: "5vh" }, // 10 — zentral
+    { x: "-4vw", y: "2.5vh" }, // 11 — etwas links und höher
+    { x: "4vw", y: "7.5vh" }, // 12 — leicht rechts und tiefer
+    { x: "2vw", y: "4vh" }, // 13 — zurück Richtung Mitte
+    { x: "0vw", y: "5vh" }, // 14 — zentral, sehr ruhig
+    { x: "0vw", y: "5vh" }, // 15 — klar zentriert
   ];
 
   const STEPS = [
