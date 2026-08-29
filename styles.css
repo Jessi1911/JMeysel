@@ -229,13 +229,21 @@ body.menu-hover .scene {
   transform: translate3d(0, 0, 0);
 }
 
-.site-menu.is-paused .site-menu-nichts-layer--base,
 .site-menu.is-paused .site-menu-ambient-wrap {
   animation-play-state: paused !important;
 }
 
-/* A quiet general wash for the room's atmosphere — separate from the
-   NICHTS reveal below, same palette, low and slow. */
+/* A quiet general wash for the room's atmosphere, and the huge "NICHTS"
+   behind it — both built from the same plain, Safari-safe techniques
+   already used for the main scene's ambient glow (opacity, blur, a
+   radial-gradient, mix-blend-mode). No background-clip:text, no masks,
+   no gradient-as-fill: those rely on mask/clip compositing that mobile
+   Safari can render as solid clipped rectangles under load, which is
+   exactly the black-box artifact this replaces. Instead NICHTS is just
+   very low-alpha flat-colored text sitting in normal painting order on
+   top of the glow — wherever the glow brightens the dark ground behind
+   it, the same low-alpha text reads a little brighter too, through
+   ordinary alpha compositing. */
 
 .site-menu-ambient-wrap {
   position: absolute;
@@ -247,20 +255,18 @@ body.menu-hover .scene {
   position: absolute;
   top: 44%;
   left: 40%;
-  width: 60vmax;
-  height: 60vmax;
+  width: 68vmax;
+  height: 52vmax;
   transform: translate3d(-50%, -50%, 0);
   border-radius: 50%;
-  background: radial-gradient(circle, var(--violet) 0%, rgba(141, 91, 197, 0.24) 34%, transparent 68%);
-  filter: blur(110px);
-  opacity: 0.4;
+  background: radial-gradient(ellipse, rgba(141, 91, 197, 0.22) 0%, rgba(141, 91, 197, 0.1) 42%, transparent 75%);
+  filter: blur(130px);
   mix-blend-mode: screen;
   transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.9s ease;
 }
 
 .site-menu.is-open .site-menu-ambient {
-  transform: translate3d(calc(-50% + 24vw), calc(-50% - 18vh), 0);
-  opacity: 0.24;
+  transform: translate3d(calc(-50% + 22vw), calc(-50% - 16vh), 0);
 }
 
 @keyframes menuAmbientDrift {
@@ -269,16 +275,30 @@ body.menu-hover .scene {
   100% { transform: translate3d(-2vw, 3vh, 0) rotate(-0.8deg); }
 }
 
-/* ---------- the giant "NICHTS" ----------
-   Not content — architecture. Huge, tight, deliberately clipped by the
-   viewport, and normally almost fused with the background: the word is
-   painted with a gradient rather than a flat color, then clipped to the
-   glyph shapes via background-clip:text, so only wherever the gradient
-   is bright enough does a letterform actually read. A slow-drifting low
-   layer gives a constant, barely-there presence; a second layer (moved
-   to the tap point, otherwise invisible) briefly brightens on tap so a
-   local patch of a letter surfaces, as if the tap itself brought light
-   into the room. */
+/* A second, smaller glow that briefly appears at a tap position, gently
+   deforming/brightening the light there rather than stamping a new
+   distinct shape — kept soft and elliptical so it never reads as a
+   crisp circle. */
+.site-menu-tap-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40vmax;
+  height: 30vmax;
+  transform: translate3d(-50%, -50%, 0);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(199, 164, 244, 0.22) 0%, rgba(141, 91, 197, 0.1) 46%, transparent 76%);
+  filter: blur(95px);
+  opacity: 0;
+  mix-blend-mode: screen;
+  transition: opacity 0.9s ease;
+}
+
+.site-menu-tap-glow.is-active {
+  opacity: 1;
+}
+
+/* ---------- the giant "NICHTS" ---------- */
 
 .site-menu-nichts {
   position: absolute;
@@ -287,7 +307,7 @@ body.menu-hover .scene {
   pointer-events: none;
 }
 
-.site-menu-nichts-layer {
+.site-menu-nichts-text {
   position: absolute;
   left: 54%;
   top: 46%;
@@ -297,39 +317,7 @@ body.menu-hover .scene {
   letter-spacing: -0.045em;
   line-height: 1;
   white-space: nowrap;
-  color: transparent;
-  -webkit-background-clip: text;
-  background-clip: text;
-}
-
-.site-menu-nichts-layer--base {
-  /* A small, fixed-size (viewport-relative, not element-relative) spot of
-     light that travels across the huge word — so its size stays a
-     modest patch rather than scaling up with the text's own huge box. */
-  background-image: radial-gradient(circle, rgba(199, 164, 244, 0.6) 0%, rgba(141, 91, 197, 0.24) 34%, transparent 68%);
-  background-size: 40vw 40vw;
-  background-repeat: no-repeat;
-  animation: nichtsDrift 42s ease-in-out infinite alternate;
-}
-
-@keyframes nichtsDrift {
-  0% { background-position: -12% 8%; }
-  50% { background-position: 58% 54%; }
-  100% { background-position: 108% 92%; }
-}
-
-.site-menu-nichts-layer--boost {
-  background-image: radial-gradient(circle, rgba(199, 164, 244, 0.95) 0%, rgba(141, 91, 197, 0.5) 34%, transparent 64%);
-  background-size: 24vw 24vw;
-  background-repeat: no-repeat;
-  background-position: var(--tap-x, 0px) var(--tap-y, 0px);
-  opacity: 0;
-  transition: opacity 0.9s ease;
-}
-
-.site-menu-nichts-layer--boost.is-active {
-  opacity: 1;
-  transition: opacity 0.35s ease;
+  color: rgba(199, 164, 244, 0.055);
 }
 
 /* ---------- the reaction ----------
@@ -415,8 +403,8 @@ body.menu-hover .scene {
   position: absolute;
   z-index: 1;
   margin: 0;
-  max-width: 15rem;
-  font-size: 0.9rem;
+  max-width: 13rem;
+  font-size: clamp(0.9rem, 4vw, 1.2rem);
   color: var(--lavender);
   opacity: 0;
   filter: blur(3px);
@@ -455,9 +443,8 @@ body.menu-open .scene {
     transform: translate3d(-50%, -50%, 0);
   }
 
-  .site-menu-nichts-layer--base {
-    animation: none;
-    background-position: 30% 45%;
+  .site-menu-tap-glow {
+    transition-duration: 0.3s;
   }
 
   .site-menu-panel {

@@ -91,12 +91,11 @@
     siteMenuPanel: document.getElementById("siteMenuPanel"),
     siteMenuEmpty: document.getElementById("siteMenuEmpty"),
     siteMenuMore: document.getElementById("siteMenuMore"),
-    siteMenuNichtsBoost: document.getElementById("siteMenuNichtsBoost"),
+    siteMenuTapGlow: document.getElementById("siteMenuTapGlow"),
     siteMenuTaps: [
       document.getElementById("siteMenuTap1"),
       document.getElementById("siteMenuTap2"),
       document.getElementById("siteMenuTap3"),
-      document.getElementById("siteMenuTap4"),
     ],
   };
 
@@ -116,10 +115,15 @@
   let menuMoreTimer = null;
   let menuTextTimers = [];
   let menuTapIndex = 0;
-  let menuTapHideTimers = [null, null, null, null];
+  let menuTapHideTimers = [null, null, null];
+  let menuTapOrder = [];
   let menuLastTapText = null;
   let menuTapsShown = new Set();
-  let menuNichtsBoostTimer = null;
+  let menuTapGlowTimer = null;
+  let menuLastTapAt = 0;
+
+  const MENU_TAP_MAX = 3;
+  const MENU_TAP_COOLDOWN_MS = 260;
 
   const MENU_TAP_TEXTS = [
     "Hier ist auch nichts.",
@@ -478,16 +482,17 @@
     }
     clearMenuTextTimers();
 
-    if (menuNichtsBoostTimer) {
-      clearTimeout(menuNichtsBoostTimer);
-      menuNichtsBoostTimer = null;
+    if (menuTapGlowTimer) {
+      clearTimeout(menuTapGlowTimer);
+      menuTapGlowTimer = null;
     }
-    els.siteMenuNichtsBoost.classList.remove("is-active");
+    els.siteMenuTapGlow.classList.remove("is-active");
 
     menuTapHideTimers.forEach((id) => {
       if (id) clearTimeout(id);
     });
-    menuTapHideTimers = [null, null, null, null];
+    menuTapHideTimers = [null, null, null];
+    menuTapOrder = [];
     els.siteMenuTaps.forEach((el) => el.classList.remove("is-visible"));
 
     els.menuTrigger.classList.remove("is-open");
@@ -509,11 +514,12 @@
     els.menuTrigger.focus();
   }
 
-  // Never the same line twice in a row; the rare line stays rare; short
-  // lines get picked slightly more often; unseen lines are preferred
-  // while the session still has fresh ones left.
-  function pickMenuTapText() {
-    if (Math.random() < 0.08 && menuLastTapText !== MENU_TAP_RARE_TEXT) {
+  // Never the same line shown twice at once, never the same line picked
+  // twice in a row, the rare line stays rare, short lines get picked
+  // slightly more often, and unseen lines are preferred while the
+  // session still has fresh ones left.
+  function pickMenuTapText(excludeSet) {
+    if (Math.random() < 0.08 && !excludeSet.has(MENU_TAP_RARE_TEXT)) {
       return MENU_TAP_RARE_TEXT;
     }
     const pool = [];
@@ -521,14 +527,124 @@
       pool.push(t);
       if (MENU_TAP_SHORT_TEXTS.has(t)) pool.push(t);
     });
-    let candidates = pool.filter((t) => t !== menuLastTapText);
+    let candidates = pool.filter((t) => !excludeSet.has(t));
+    if (!candidates.length) candidates = pool.filter((t) => t !== menuLastTapText);
     const unseen = candidates.filter((t) => !menuTapsShown.has(t));
     if (unseen.length) candidates = unseen;
     return candidates[Math.floor(Math.random() * candidates.length)];
   }
 
-  function showMenuTapReaction(clientX, clientY, rect) {
-    const text = pickMenuTapText();
+  function rectsOverlap(a, b) {
+    return !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
+  }
+
+  function padRect(r, pad) {
+    return { left: r.left - pad, top: r.top - pad, right: r.right + pad, bottom: r.bottom + pad };
+  }
+
+  // The main reaction's real, currently-rendered bounding box (never
+  // hardcoded coordinates) plus a margin — tap reactions must stay clear
+  // of this entirely, whatever tier/position it currently has.
+  function getMainTextSafeRect(panelRect) {
+    const r = els.siteMenuEmpty.getBoundingClientRect();
+    if (!r.width || !r.height) return null;
+    return padRect(
+      {
+        left: r.left - panelRect.left,
+        top: r.top - panelRect.top,
+        right: r.right - panelRect.left,
+        bottom: r.bottom - panelRect.top,
+      },
+      56
+    );
+  }
+
+  // Keep clear of the × trigger and the JM mark's footprint too.
+  function getCornerExclusionRects(panelRect) {
+    return [els.menuTrigger, els.brand].map((el) => {
+      const r = el.getBoundingClientRect();
+      return padRect(
+        {
+          left: r.left - panelRect.left,
+          top: r.top - panelRect.top,
+          right: r.right - panelRect.left,
+          bottom: r.bottom - panelRect.top,
+        },
+        14
+      );
+    });
+  }
+
+  function findTapPosition(localX, localY, w, h, panelRect) {
+    const margin = 28;
+    const minX = margin;
+    const minY = margin;
+    const maxX = Math.max(minX, panelRect.width - margin - w);
+    const maxY = Math.max(minY, panelRect.height - margin - h);
+
+    const occupied = [];
+    const safeRect = getMainTextSafeRect(panelRect);
+    if (safeRect) occupied.push(safeRect);
+    occupied.push(...getCornerExclusionRects(panelRect));
+    els.siteMenuTaps.forEach((el) => {
+      if (el.classList.contains("is-visible")) {
+        const r = el.getBoundingClientRect();
+        occupied.push(
+          padRect(
+            {
+              left: r.left - panelRect.left,
+              top: r.top - panelRect.top,
+              right: r.right - panelRect.left,
+              bottom: r.bottom - panelRect.top,
+            },
+            10
+          )
+        );
+      }
+    });
+
+    const offsetX = 24 + Math.random() * 20;
+    const offsetY = 22 + Math.random() * 18;
+    // Desired spot first, then a small search around it: right, left,
+    // above, below, further away — never a visible slide to get there,
+    // just picked before the text ever appears.
+    const candidates = [
+      { x: localX + offsetX, y: localY + offsetY },
+      { x: localX + offsetX + w * 0.9, y: localY + offsetY },
+      { x: localX - offsetX - w, y: localY + offsetY },
+      { x: localX - w / 2, y: localY - offsetY - h },
+      { x: localX - w / 2, y: localY + offsetY + h * 1.6 },
+      { x: localX + offsetX + w * 1.8, y: localY + offsetY + h * 1.4 },
+    ];
+
+    let fallback = null;
+    for (const c of candidates) {
+      const x = Math.min(Math.max(minX, c.x), maxX);
+      const y = Math.min(Math.max(minY, c.y), maxY);
+      const rect = { left: x, top: y, right: x + w, bottom: y + h };
+      if (!fallback) fallback = { x, y };
+      if (!occupied.some((o) => rectsOverlap(rect, o))) return { x, y };
+    }
+    return fallback;
+  }
+
+  function showMenuTapReaction(clientX, clientY, panelRect) {
+    const visibleSlots = els.siteMenuTaps.filter((el) => el.classList.contains("is-visible"));
+    if (visibleSlots.length >= MENU_TAP_MAX) {
+      const oldest = menuTapOrder.shift();
+      if (oldest) {
+        const idx = els.siteMenuTaps.indexOf(oldest);
+        if (menuTapHideTimers[idx]) {
+          clearTimeout(menuTapHideTimers[idx]);
+          menuTapHideTimers[idx] = null;
+        }
+        oldest.classList.remove("is-visible");
+      }
+    }
+
+    const exclude = new Set(els.siteMenuTaps.filter((el) => el.classList.contains("is-visible")).map((el) => el.textContent));
+    if (menuLastTapText) exclude.add(menuLastTapText);
+    const text = pickMenuTapText(exclude);
     menuLastTapText = text;
     menuTapsShown.add(text);
 
@@ -538,58 +654,55 @@
 
     if (menuTapHideTimers[slot]) clearTimeout(menuTapHideTimers[slot]);
     el.classList.remove("is-visible");
-
-    const margin = 20;
-    const estWidth = 210;
-    const estHeight = 34;
-    const offsetX = 24 + Math.random() * 20;
-    const offsetY = 22 + Math.random() * 18;
-    let x = clientX - rect.left + offsetX;
-    let y = clientY - rect.top + offsetY;
-    if (x + estWidth > rect.width - margin) x = clientX - rect.left - offsetX - estWidth;
-    if (y + estHeight > rect.height - margin) y = clientY - rect.top - offsetY - estHeight;
-    x = Math.max(margin, Math.min(x, rect.width - estWidth - margin));
-    y = Math.max(margin, Math.min(y, rect.height - estHeight - margin));
-
     el.textContent = text;
-    el.style.left = `${x}px`;
-    el.style.top = `${y}px`;
+
+    // Measure the real rendered size (opacity:0 still lays out normally)
+    // instead of guessing a fixed width/height.
+    const measured = el.getBoundingClientRect();
+    const w = measured.width || 120;
+    const h = measured.height || 28;
+
+    const localX = clientX - panelRect.left;
+    const localY = clientY - panelRect.top;
+    const pos = findTapPosition(localX, localY, w, h, panelRect);
+
+    el.style.left = `${pos.x}px`;
+    el.style.top = `${pos.y}px`;
     // eslint-disable-next-line no-unused-expressions
     el.offsetWidth;
     el.classList.add("is-visible");
+    menuTapOrder.push(el);
 
     menuTapHideTimers[slot] = setTimeout(() => {
       el.classList.remove("is-visible");
       menuTapHideTimers[slot] = null;
+      const idx = menuTapOrder.indexOf(el);
+      if (idx !== -1) menuTapOrder.splice(idx, 1);
     }, 2000);
   }
 
-  function triggerNichtsBoost(clientX, clientY) {
-    // background-position percentages follow a "container/image size
-    // difference" formula, not a simple "point at X%" mapping — since the
-    // spot is much smaller than the giant NICHTS box, that formula would
-    // place it far from the actual tap. Pixel offsets (positioning the
-    // spot's own top-left so its center lands exactly on the tap) avoid
-    // that entirely.
-    const rect = els.siteMenuNichtsBoost.getBoundingClientRect();
-    const spotSize = window.innerWidth * 0.24;
-    const x = clientX - rect.left - spotSize / 2;
-    const y = clientY - rect.top - spotSize / 2;
-    els.siteMenuNichtsBoost.style.setProperty("--tap-x", `${x}px`);
-    els.siteMenuNichtsBoost.style.setProperty("--tap-y", `${y}px`);
-    els.siteMenuNichtsBoost.classList.add("is-active");
-    if (menuNichtsBoostTimer) clearTimeout(menuNichtsBoostTimer);
-    menuNichtsBoostTimer = setTimeout(() => {
-      els.siteMenuNichtsBoost.classList.remove("is-active");
-      menuNichtsBoostTimer = null;
+  function triggerTapGlow(clientX, clientY, panelRect) {
+    const x = clientX - panelRect.left;
+    const y = clientY - panelRect.top;
+    els.siteMenuTapGlow.style.left = `${x}px`;
+    els.siteMenuTapGlow.style.top = `${y}px`;
+    els.siteMenuTapGlow.classList.add("is-active");
+    if (menuTapGlowTimer) clearTimeout(menuTapGlowTimer);
+    menuTapGlowTimer = setTimeout(() => {
+      els.siteMenuTapGlow.classList.remove("is-active");
+      menuTapGlowTimer = null;
     }, 1100);
   }
 
   function handleMenuPanelClick(e) {
     if (!menuOpen) return;
+    const now = Date.now();
+    if (now - menuLastTapAt < MENU_TAP_COOLDOWN_MS) return;
+    menuLastTapAt = now;
+
     const rect = els.siteMenuPanel.getBoundingClientRect();
     showMenuTapReaction(e.clientX, e.clientY, rect);
-    if (!reducedMotion) triggerNichtsBoost(e.clientX, e.clientY);
+    if (!reducedMotion) triggerTapGlow(e.clientX, e.clientY, rect);
   }
 
   function initMenu() {
