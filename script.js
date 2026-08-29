@@ -35,7 +35,7 @@
     { x: "4vw", y: "2.5vh" }, // 12 — leicht rechts und tiefer
     { x: "2vw", y: "-1vh" }, // 13 — zurück Richtung Mitte
     { x: "0vw", y: "0vh" }, // 14 — zentral, sehr ruhig
-    { x: "0vw", y: "0vh" }, // 15 — klar zentriert
+    { x: "0vw", y: "5vh" }, // 15 — klar zentriert, etwas tiefer für optische Mitte
   ];
 
   const STEPS = [
