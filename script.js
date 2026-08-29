@@ -566,9 +566,13 @@
     );
   }
 
-  // Keep clear of the × trigger and the JM mark's footprint too.
-  function getCornerExclusionRects(panelRect) {
-    return [els.menuTrigger, els.brand].map((el) => {
+  // Keep clear of the × trigger, the JM mark's footprint, and "Mehr kommt
+  // nicht." (if it's currently showing) too — any real, currently visible
+  // text in the room is off-limits for a tap reaction to land on.
+  function getFixedExclusionRects(panelRect) {
+    const els_ = [els.menuTrigger, els.brand];
+    if (els.siteMenuMore.classList.contains("is-visible")) els_.push(els.siteMenuMore);
+    return els_.map((el) => {
       const r = el.getBoundingClientRect();
       return padRect(
         {
@@ -592,7 +596,7 @@
     const occupied = [];
     const safeRect = getMainTextSafeRect(panelRect);
     if (safeRect) occupied.push(safeRect);
-    occupied.push(...getCornerExclusionRects(panelRect));
+    occupied.push(...getFixedExclusionRects(panelRect));
     els.siteMenuTaps.forEach((el) => {
       if (el.classList.contains("is-visible")) {
         const r = el.getBoundingClientRect();
