@@ -168,9 +168,7 @@
     });
 
     els.storyLight.style.opacity = String((0.05 + 0.42 * p) * dip);
-    const size = 38 + p * 30;
-    els.storyLight.style.width = `${size}vw`;
-    els.storyLight.style.height = `${size}vw`;
+    root.style.setProperty("--light-scale", String(1 + p * 0.79));
     root.style.setProperty("--story-tint", storyTintFor(p));
 
     root.style.setProperty("--pos-x", step.pos.x);
@@ -212,6 +210,8 @@
   function scheduleIdleTimer() {
     clearIdleTimer();
     idleTimer = setTimeout(() => {
+      if (menuOpen || document.hidden) return;
+      els.idleHint.textContent = pickLine("idle", ["Du musst nichts tun.", "Wir haben Zeit.", "Noch da. Gut.", "Angenehm ereignislos."]);
       els.idleHint.classList.add("is-visible");
     }, IDLE_DELAY);
   }
@@ -249,6 +249,7 @@
   function renderStep(index, initial) {
     const step = sequence[index];
     els.headline.innerHTML = step.headline;
+    if (!initial) document.getElementById("storyAnnouncement").textContent = `${els.headline.textContent} ${step.subline}`;
     els.subline.textContent = step.subline;
     els.greeting.textContent = step.greeting || "";
 
@@ -337,13 +338,13 @@
   }
 
   function goNext() {
-    if (isAnimating) return;
+    if (isAnimating || menuOpen) return;
     const current = sequence[stepIndex];
     if (!current.button) return;
 
     isAnimating = true;
     clearIdleTimer();
-    triggerSpark();
+    recordInteraction();
 
     els.headline.classList.add("is-leaving");
     els.subline.classList.add("is-leaving");
@@ -412,7 +413,7 @@
     if (count <= 1) return "Hier gibt es auch nichts.";
     if (count === 2) return "Immer noch nichts.";
     if (count === 3) return "Du prüfst wirklich gründlich.";
-    return "Nein.";
+    return pickLine("menu", ["Nein.", "Du hast wirklich nachgesehen.", "Gründlich.", "Ich bewundere deinen Optimismus.", "Unverändert leer.", "Auch beim nächsten Mal.", "Du kennst dich hier inzwischen aus."]);
   }
 
   // Without a "Menü" label to hold a beat, the delay before the reaction
@@ -432,13 +433,17 @@
   }
 
   function menuReactionTierFor(count) {
-    return count >= 4 ? "4plus" : String(count);
+    return count >= 4 ? "3" : String(count);
   }
 
   function openMenu() {
     if (menuOpen) return;
     menuOpen = true;
     menuOpenCount += 1;
+    recordInteraction();
+    clearIdleTimer();
+    document.getElementById("emptyReaction").classList.remove("is-visible");
+    els.scrollHint.classList.remove("is-visible");
 
     els.menuTrigger.classList.add("is-open");
     els.menuTrigger.setAttribute("aria-expanded", "true");
@@ -450,6 +455,7 @@
 
     els.brand.inert = true;
     els.stage.inert = true;
+    document.getElementById("storyAnnouncement").inert = true;
 
     root.style.setProperty("--motion-scale", String(currentMotionBase() * 1.6));
 
@@ -471,7 +477,7 @@
     }
 
     requestAnimationFrame(() => {
-      els.siteMenuPanel.focus({ preventScroll: true });
+      if (menuOpen) els.siteMenuPanel.focus({ preventScroll: true });
     });
   }
 
@@ -511,10 +517,12 @@
 
     els.brand.inert = false;
     els.stage.inert = false;
+    document.getElementById("storyAnnouncement").inert = false;
 
     root.style.setProperty("--motion-scale", String(currentMotionBase()));
 
     els.menuTrigger.focus();
+    if (sequence[stepIndex].button) scheduleIdleTimer();
   }
 
   // Never the same line shown twice at once, never the same line picked
@@ -730,6 +738,7 @@
     const now = Date.now();
     if (now - menuLastTapAt < MENU_TAP_COOLDOWN_MS) return;
     menuLastTapAt = now;
+    recordInteraction();
 
     const rect = els.siteMenuPanel.getBoundingClientRect();
     showMenuTapReaction(e.clientX, e.clientY, rect);
@@ -752,6 +761,10 @@
 
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && menuOpen) closeMenu();
+      if (e.key === "Tab" && menuOpen) {
+        e.preventDefault();
+        els.menuTrigger.focus();
+      }
     });
 
     document.addEventListener("visibilitychange", () => {
@@ -768,149 +781,141 @@
     }
   }
 
-  function initPointerEffects() {
-    if (isTouch || reducedMotion) return;
-
-    let anchorX = window.innerWidth / 2;
-    let anchorY = window.innerHeight / 2;
-    let x = anchorX;
-    let y = anchorY;
-    let raf = null;
-    let hovering = false;
-
-    window.addEventListener(
-      "mousemove",
-      (e) => {
-        const cx = window.innerWidth / 2;
-        const cy = window.innerHeight / 2;
-        anchorX = cx + (e.clientX - cx) * 0.18;
-        anchorY = cy + (e.clientY - cy) * 0.18;
-      },
-      { passive: true }
-    );
-
-    els.actionBtn.addEventListener("mouseenter", () => {
-      hovering = true;
-    });
-    els.actionBtn.addEventListener("mouseleave", () => {
-      hovering = false;
-    });
-
-    function tick() {
-      x += (anchorX - x) * 0.035;
-      y += (anchorY - y) * 0.035;
-
-      els.cursorLight.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-      els.cursorLight.style.opacity = hovering ? "0.22" : "0.13";
-
-      // The sculpture leans away from the cursor — a slow, inverted, subtle
-      // parallax rather than something visibly "following" the pointer.
-      const offsetX = x - window.innerWidth / 2;
-      const offsetY = y - window.innerHeight / 2;
-      root.style.setProperty("--parallax-x", `${(-offsetX * 0.02).toFixed(1)}px`);
-      root.style.setProperty("--parallax-y", `${(-offsetY * 0.02).toFixed(1)}px`);
-
-      raf = requestAnimationFrame(tick);
-    }
-
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden) {
-        if (raf) cancelAnimationFrame(raf);
-        raf = null;
-        els.scene.classList.add("is-paused");
-      } else {
-        els.scene.classList.remove("is-paused");
-        if (!raf) raf = requestAnimationFrame(tick);
+  // Shuffle bags exhaust the vocabulary before repeating, including at the seam.
+  const lineBags = new Map();
+  function pickLine(key, lines) {
+    let bag = lineBags.get(key);
+    if (!bag) { bag = { remaining: [], last: null }; lineBags.set(key, bag); }
+    if (!bag.remaining.length) {
+      bag.remaining = lines.slice();
+      for (let i = bag.remaining.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [bag.remaining[i], bag.remaining[j]] = [bag.remaining[j], bag.remaining[i]];
       }
-    });
+      if (bag.remaining.at(-1) === bag.last) bag.remaining.unshift(bag.remaining.pop());
+    }
+    bag.last = bag.remaining.pop();
+    return bag.last;
+  }
 
-    raf = requestAnimationFrame(tick);
+  let interactions = 0;
+  let activeSeconds = 0;
+  let lastInteraction = 0;
+  let nextSurprise = 65 + Math.random() * 35;
+  function recordInteraction() {
+    interactions++;
+    lastInteraction = performance.now();
+    updateGrowth();
+  }
+  function updateGrowth() {
+    const growth = document.getElementById("nothingGrowth");
+    const count = Math.min(9, Math.floor(activeSeconds / 40 + interactions / 9));
+    while (growth.children.length < count) {
+      const i = growth.children.length;
+      const dot = document.createElement("i");
+      dot.style.left = `${8 + (i * 29) % 84}%`;
+      dot.style.top = `${i % 2 ? 82 + i % 3 : 15 + i % 4}%`;
+      growth.append(dot);
+    }
+  }
+
+  function initQuietLife() {
+    setInterval(() => {
+      if (document.hidden || menuOpen) return;
+      activeSeconds++;
+      updateGrowth();
+      if (activeSeconds < nextSurprise || isAnimating || performance.now() - lastInteraction < 8000) return;
+      nextSurprise = activeSeconds + 70 + Math.random() * 50;
+      if (!reducedMotion) triggerSpark();
+      else showEmptyReaction("War da gerade etwas?");
+    }, 1000);
+    document.addEventListener("visibilitychange", () => {
+      document.body.classList.toggle("page-hidden", document.hidden);
+      if (document.hidden) clearIdleTimer();
+      else if (!menuOpen && sequence[stepIndex].button) scheduleIdleTimer();
+    });
+  }
+
+  let reactionTimer;
+  function showEmptyReaction(text) {
+    const el = document.getElementById("emptyReaction");
+    clearTimeout(reactionTimer);
+    els.scrollHint.classList.remove("is-visible");
+    el.textContent = text;
+    el.classList.add("is-visible");
+    reactionTimer = setTimeout(() => el.classList.remove("is-visible"), 2600);
+  }
+  function initEmptyClicks() {
+    let last = -Infinity;
+    document.addEventListener("click", e => {
+      if (menuOpen || e.target.closest("button, a, .text-wrap") || performance.now() - last < 700) return;
+      last = performance.now();
+      recordInteraction();
+      showEmptyReaction(pickLine("empty", ["Hier ist auch nichts.", "Nein.", "Immer noch nichts.", "Du prüfst wirklich gründlich.", "Gute Stelle. Trotzdem leer.", "Knapp daneben. Wobei …", "Das zählt als Suchen.", "Hier war auch eben nichts.", "Viel Platz für nichts.", "Du darfst gern weitersuchen."]));
+    });
+  }
+
+  function initPointerEffects() {
+    let frame = null;
+    let targetX = innerWidth / 2, targetY = innerHeight / 2;
+    let x = targetX, y = targetY;
+    function tick() {
+      frame = null;
+      if (reducedMotion || document.hidden) return;
+      x += (targetX - x) * 0.08; y += (targetY - y) * 0.08;
+      els.cursorLight.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%)`;
+      els.cursorLight.style.opacity = "0.13";
+      root.style.setProperty("--parallax-x", `${(-(x - innerWidth / 2) * 0.02).toFixed(1)}px`);
+      root.style.setProperty("--parallax-y", `${(-(y - innerHeight / 2) * 0.02).toFixed(1)}px`);
+      if (Math.abs(targetX - x) + Math.abs(targetY - y) > 0.2) frame = requestAnimationFrame(tick);
+    }
+    window.addEventListener("pointermove", e => {
+      if (e.pointerType !== "mouse" || reducedMotion || document.hidden) return;
+      targetX = innerWidth / 2 + (e.clientX - innerWidth / 2) * 0.18;
+      targetY = innerHeight / 2 + (e.clientY - innerHeight / 2) * 0.18;
+      if (!frame) frame = requestAnimationFrame(tick);
+    }, { passive: true });
   }
 
   function initTouchLight() {
-    if (!isTouch || reducedMotion) return;
-    window.addEventListener(
-      "touchstart",
-      (e) => {
-        const t = e.touches[0];
-        if (!t) return;
-        els.touchLight.style.left = `${t.clientX}px`;
-        els.touchLight.style.top = `${t.clientY}px`;
-        els.touchLight.classList.remove("is-active");
-        // eslint-disable-next-line no-unused-expressions
-        els.touchLight.offsetWidth;
-        els.touchLight.classList.add("is-active");
-      },
-      { passive: true }
-    );
-
-    document.addEventListener("visibilitychange", () => {
-      els.scene.classList.toggle("is-paused", document.hidden);
-    });
+    window.addEventListener("pointerdown", e => {
+      if (e.pointerType !== "touch" || reducedMotion || menuOpen) return;
+      els.touchLight.style.left = `${e.clientX}px`;
+      els.touchLight.style.top = `${e.clientY}px`;
+      els.touchLight.classList.remove("is-active");
+      void els.touchLight.offsetWidth;
+      els.touchLight.classList.add("is-active");
+    }, { passive: true });
   }
 
   function initScrollHint() {
-    let shown = false;
-
+    let last = -Infinity, timer, start = null;
     function trigger() {
-      if (shown) return;
-      shown = true;
-      els.scrollHint.textContent = "Da unten ist auch nichts.";
+      if (menuOpen || performance.now() - last < 5000) return;
+      // At larger text sizes actual content may overflow: let people read it.
+      if (document.documentElement.scrollHeight > innerHeight + 8) return;
+      last = performance.now();
+      recordInteraction();
+      document.getElementById("emptyReaction").classList.remove("is-visible");
+      els.scrollHint.textContent = pickLine("scroll", ["Wohin willst du?", "Da unten ist auch nichts.", "Optimistisch.", "Weiter unten wird es nicht voller.", "Das war schon alles. Räumlich gesehen.", "Du gibst nicht so schnell auf."]);
       els.scrollHint.classList.add("is-visible");
-      setTimeout(() => {
-        els.scrollHint.classList.remove("is-visible");
-      }, 2500);
+      clearTimeout(timer);
+      timer = setTimeout(() => els.scrollHint.classList.remove("is-visible"), 2800);
     }
-
-    if (!isTouch) {
-      window.addEventListener(
-        "wheel",
-        (e) => {
-          if (!shown && !menuOpen && e.deltaY > 15) trigger();
-        },
-        { passive: true }
-      );
-      return;
-    }
-
-    // Touch: only a clear, mostly-vertical upward drag counts as "trying to
-    // scroll down" — small taps/jitter from ordinary button taps stay well
-    // under this threshold, so it shouldn't fire from normal interaction.
-    let startX = null;
-    let startY = null;
-
-    window.addEventListener(
-      "touchstart",
-      (e) => {
-        if (shown || menuOpen) return;
-        const t = e.touches[0];
-        startX = t ? t.clientX : null;
-        startY = t ? t.clientY : null;
-      },
-      { passive: true }
-    );
-
-    window.addEventListener(
-      "touchmove",
-      (e) => {
-        if (shown || menuOpen || startY == null) return;
-        const t = e.touches[0];
-        if (!t) return;
-        const deltaY = startY - t.clientY;
-        const deltaX = Math.abs(startX - t.clientX);
-        if (deltaY > 48 && deltaY > deltaX * 1.5) trigger();
-      },
-      { passive: true }
-    );
-
-    window.addEventListener(
-      "touchend",
-      () => {
-        startX = null;
-        startY = null;
-      },
-      { passive: true }
-    );
+    window.addEventListener("wheel", e => { if (Math.abs(e.deltaY) > 15) trigger(); }, { passive: true });
+    window.addEventListener("touchstart", e => {
+      start = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+    }, { passive: true });
+    window.addEventListener("touchmove", e => {
+      if (!start || e.touches.length !== 1) { start = null; return; }
+      const dy = Math.abs(start.y - e.touches[0].clientY);
+      const dx = Math.abs(start.x - e.touches[0].clientX);
+      if (dy > 48 && dy > dx * 1.5) { start = null; trigger(); }
+    }, { passive: true });
+    ["touchend", "touchcancel"].forEach(type => window.addEventListener(type, () => { start = null; }, { passive: true }));
+    window.addEventListener("keydown", e => {
+      if (["ArrowDown", "ArrowUp", "PageDown", "PageUp", "End"].includes(e.key) && !e.target.closest("button")) trigger();
+    });
   }
 
   function start() {
@@ -940,6 +945,8 @@
     initTouchLight();
     initScrollHint();
     initMenu();
+    initEmptyClicks();
+    initQuietLife();
 
     renderStep(0, true);
   }
