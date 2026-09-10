@@ -13,8 +13,8 @@
 </head>
 <body>
 
-  <button class="brand" id="brand" type="button" aria-label="Jessica Meysel — zurück zum Anfang">
-    <span class="brand-mark">JM</span>
+  <button class="brand" id="brand" type="button" aria-label="JM — zurück zum Anfang">
+    <svg class="brand-mark" viewBox="0 0 36 24" width="28" height="20" aria-hidden="true"><path d="M3 16v1a4 4 0 0 0 8 0V3H6 M18 21V3l7 10 7-10v18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"/></svg>
   </button>
 
   <button class="menu-trigger" id="menuTrigger" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="siteMenu" aria-label="Menü öffnen">
@@ -74,17 +74,20 @@
     <div class="grain"></div>
   </div>
 
+  <p class="empty-reaction" id="emptyReaction" aria-live="polite"></p>
+  <div class="nothing-growth" id="nothingGrowth" aria-hidden="true"></div>
+  <p class="sr-only" id="storyAnnouncement" aria-live="polite" aria-atomic="true"></p>
   <p class="scroll-hint" id="scrollHint" aria-live="polite"></p>
 
   <main class="stage">
     <div class="text-wrap" id="textWrap">
-      <p class="greeting" id="greeting"></p>
-      <h1 class="headline" id="headline"></h1>
-      <p class="subline" id="subline"></p>
+      <p class="greeting" id="greeting">Oh, hi.</p>
+      <h1 class="headline" id="headline">Hier gibt es<br>noch nichts.</h1>
+      <p class="subline" id="subline">Du kannst trotzdem ein bisschen bleiben.</p>
 
       <div class="action" id="action">
         <button class="action-btn" id="actionBtn" type="button">
-          <span class="action-label" id="actionLabel"></span>
+          <span class="action-label" id="actionLabel">Okay.</span>
           <span class="action-arrow" aria-hidden="true">&rarr;</span>
         </button>
         <p class="idle-hint" id="idleHint" aria-live="polite"></p>
@@ -107,7 +110,7 @@
       <div class="site-menu-nichts" aria-hidden="true">
         <span class="site-menu-nichts-text">NICHTS</span>
       </div>
-      <p class="site-menu-reaction" id="siteMenuEmpty"></p>
+      <p class="site-menu-reaction" id="siteMenuEmpty" aria-live="polite"></p>
       <p class="site-menu-more" id="siteMenuMore" aria-live="polite"></p>
       <p class="site-menu-tap" id="siteMenuTap1" aria-hidden="true"></p>
       <p class="site-menu-tap" id="siteMenuTap2" aria-hidden="true"></p>
