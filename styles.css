@@ -1169,3 +1169,5 @@ body.menu-open .scene {
 
 .empty-reaction, .scroll-hint, .idle-hint { visibility: hidden; }
 .empty-reaction.is-visible, .scroll-hint.is-visible, .idle-hint.is-visible { visibility: visible; }
+/* Clip the decorative text scrim, not the document's real reading area. */
+.stage { overflow: clip; }
